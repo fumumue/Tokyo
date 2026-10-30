@@ -30,7 +30,8 @@
 #include <execinfo.h>
 #include <immintrin.h> // SSE4.1を使用するためのヘッダファイル
 #include <x86intrin.h> // SIMD命令を使用するためのヘッダファイル
-#include "omp.h"
+#include <math.h>
+//#include "omp.h"
 
 #include "global-p.h"
 #include "struct-p.h"
@@ -301,7 +302,7 @@ vec vterml(vec f, oterm t)
     // h.t[i].n = f.t[i].n + t.n;
     if (f.x[i] > 0){
         h.x[i + t.n] = gf[mlt(fg[f.x[i]] , fg[t.a])]; //% Pr;
-        printf("t+n=%d\n", i + t.n);
+        //printf("t+n=%d\n", i + t.n);
     }
   }
 
@@ -310,40 +311,6 @@ vec vterml(vec f, oterm t)
   return h;
 }
 
-
-// 多項式を項ずつ掛ける
-vec vterml2(vec f, oterm t)
-{
-    // f=conv(f);
-    //  assert (vec_verify (f));
-    // int i, k, j;
-    vec h = {0};
-    vec test;
-    short n;
-
-    printpol(f);
-    printf(" ==f\n");
-    printf("t.a=%d\n", t.a);
-    printf("t.n=%d\n", t.n);
-    // exit(1);
-    //
-    int k = deg(f) + 1;
-    printf("k=%d\n", k);
-    int j = 0;
-    for (int i = 0; i < k; i++)
-    {
-        if (f.x[i] > 0)
-        {
-            short tmp = equ(t.a, f.x[i]);
-            h.x[i - t.n] = (f.x[i] - gf[mlt(fg[tmp], fg[t.a])]) % Pr;
-            printf("t+n=%d\n", i - t.n);
-        }
-    }
-
-    // h=conv(h);
-    // assert (vec_verify (h));
-    return h;
-}
 
 // 多項式を項ずつ掛ける
 vec oterml(vec f, oterm t)
@@ -502,14 +469,14 @@ vec vmul(vec f, vec g)
         // t.n=i;
         if (t.a > 0 && t.a < O)
         {
-            printf("t[%d]=%d,%d\n", i, t.a, t.n);
+            //printf("t[%d]=%d,%d\n", i, t.a, t.n);
             e = oterml(f, t);
-            printpol((e));
-            printf(" =e\n");
+            //printpol((e));
+            //printf(" =e\n");
             // exit(1);
             h = vadd2(h, e);
-            printpol((h));
-            printf(" =h\n");
+            //printpol((h));
+            //printf(" =h\n");
         }
     }
 
@@ -530,8 +497,8 @@ vec vmul2(vec f, vec g)
     l = deg((f));
     m = deg((g));
 
-    for (int i = 0; i < 2; i++)
-        printf("%d\n", g.x[i]);
+    //for (int i = 0; i < 2; i++)
+    //    printf("%d\n", g.x[i]);
     // exit(1);
 
     if (l >= m)
@@ -550,14 +517,14 @@ vec vmul2(vec f, vec g)
         // t.n=i;
         if (t.a > 0 && t.a < O)
         {
-            printf("t[%d]=%d,%d\n", i, t.a, t.n);
+            //printf("t[%d]=%d,%d\n", i, t.a, t.n);
             e = vterml(f, t);
-            printpol((e));
-            printf(" =e\n");
+            //printpol((e));
+            //printf(" =e\n");
             // exit(1);
             h = vadd2(h, e);
-            printpol((h));
-            printf(" =h\n");
+            //printpol((h));
+            //printf(" =h\n");
         }
     }
 
@@ -780,7 +747,9 @@ vec opowmod(vec f, vec mod, int n) {
     while (n > 0) {
         //printf("veaut %d\n",n);
         if (n & 1) ret = vmod(vmul2(ret , f),mod) ;  // n の最下位bitが 1 ならば x^(2^i) をかける
-        f = vmod(vmul2(f , f),mod);
+        f = vmul2(f , f);
+        if(deg(f)>deg(mod))
+        f=vmod(f,mod);
         n >>= 1;  // n を1bit 左にずらす
 
     }
@@ -1453,6 +1422,33 @@ void printsage(vec a)
     }
 }
 
+
+int res(vec h,vec s){
+vec rem={0};
+int o=0,p=1;
+vec r;
+oterm q={0};
+
+rem.x[0]=1;
+while(deg(s)>0){
+r=vmod(h,s);
+o=(deg(h)+deg(s));
+p=deg(h)-deg(r);
+
+q=vLT(s);
+q.n+=p;
+if(o%2==1)
+q.a = minus(q.a);
+rem=vterml(rem,q);
+h=s;
+s=r;
+}
+if(vLT(s).a==0 || vLT(h).a==0)
+return -1;
+
+return 0;
+}
+
 vec gcd(vec a, vec b)
 {
     vec r = {0}, h = {0}, tmp = {0};
@@ -1884,14 +1880,14 @@ int ben_or(vec f)
     int m = E;
     // m=12 as a for GF(4096)=2^12 defined @ gloal.h or here,for example m=4 and GF(16)
 
-    printsage(f);
-    printf("\n");
+    //printsage(f);
+    //printf("\n");
     //exit(1);
     v.x[1] = 1;
     ss = (v);
     r.x[1]=minus(1); //Pr-1;
-    printpol(r);
-    printf("kofwojhfow");
+    //printpol(r);
+    //printf("kofwojhfow");
     //exit(1);
     //r = s;
     n = deg((f));
@@ -1903,23 +1899,29 @@ int ben_or(vec f)
     // r(x)^{q^i} square pow mod
     for (i=0;i < K / 2;i++)
     {
-    //printpol(r);
-    
+        //printpol(f);
+        //printf(" ==f\n");
         flg = 1;
-        printf("veaut :i=%d",i);
+        printf("veaut ");
+        printf("\nveaut :i=%d\n",i);
  
 
-        // irreducible over GH(8192) 2^13
-       for(int i=0;i<E;i++)
-        v = opowmod(v, f, Pr);
-        //v=opp(v,f);
+        // irreducible over GF(Pr^E==N)
+        v = opowmod(v, f, N);
         
         u = vadd2(v, (r));
-        u = gcd(u, f);
-        if (deg((u)) > 0){
-        printsage(u);
-        printf(" ==u\n");
-        return -1;
+        //u = gcd(u, f);
+        //if (deg((u)) > 0)
+        {
+            if(res(u,f)==-1)
+            {
+                //printf("baka\n");
+                //exit(1);
+                return -1;
+            }
+        //printsage(u);
+        //printf(" ==u\n");
+        //return -1;
         }
         //i++;
     }
@@ -2467,7 +2469,7 @@ void ogt(short pp[], int kk)
     // exit(1);
 }
 
-vec synd(short zz[], int kk)
+vec synd(short *zz, int kk)
 {
     short syn[K] = {0}, s = 0;
     int i, j, t1;
@@ -4056,11 +4058,11 @@ short minus(short a)
     int k = deg((c)) + 1;
     short u = 0;
     vec f;
-    printf("a=%d\n", a);
+    //printf("a=%d\n", a);
     for (int i = 0; i < k; i++)
     {
         b.x[i] = (Pr - c.x[i]) % Pr;
-        printf("chen_b=%d\n", b.x[i]);
+        //printf("chen_b=%d\n", b.x[i]);
     }
     u = xtrace((b), Pr);
 
@@ -4704,7 +4706,10 @@ vec vv(int kk)
 
 aa:
     // exit(1);
+    while(l<0){
     r = mkpol();
+    l=ben_or(r);
+    }
     // for( int i= 0; i < K; i++)
     // pp.x[i] = rand() % N;
     // mykey(r.x, pp);
@@ -5451,7 +5456,7 @@ int main(void)
 {
     if (K > N)
         printf("configuration error! K is bigger than N\n");
-    unsigned short zz[N]={0};
+    short zz[N]={0};
 
     srand(clock());
     
@@ -5468,23 +5473,24 @@ int main(void)
 
     int l=-1;
     vec x={0},r={0},w={0},ss={0},v={0},tt={0},uu={0};
-    x.x[4]=1;
-    x.x[3]=59;
-    x.x[2]=0;
-    x.x[1]=1182;
+    x.x[2]=1;
+    x.x[1]=1;
     x.x[0]=1;
+    v.x[2]=1;
     v.x[1]=1;
     r.x[1]=minus(1);
     //x.x[13]=1;
     //x.x[16]=1;
-    v=vmod(opow(vmod(opow(v,81),x),27),x);
+    //v=vmod(opow(vmod(opow(v,81),x),27),x);
     tt=vadd2(v,r);
     printsage(x);
     printf("\n");
     printpol(v);
     printf("\n");
-    printpol(gcd(tt,x));
+    printpol(gcd(x,v));
     printf("\n");
+    //printpol(res(x,v));
+    printf("%d\n",res(x,v));
     //exit(1);
     
     while(l<0){
@@ -5496,8 +5502,8 @@ int main(void)
     printf(" veautiful\n");
     printpol(x);
     printf(" veautiful2\n");
-    exit(1);
-    
+    // exit(1);
+
 
     //pk_gen();
     vv(K);
