@@ -103,6 +103,7 @@ void print_matrix(int A[MATRIX_SIZE][MATRIX_SIZE]) {
     }
 }
 
+/*
 // ガウスの消去法をSIMDで実行する関数
 void gaussian_elimination_simd(int A[MATRIX_SIZE][MATRIX_SIZE]) {
     for (int k = 0; k < MATRIX_SIZE; k++) {
@@ -117,7 +118,7 @@ void gaussian_elimination_simd(int A[MATRIX_SIZE][MATRIX_SIZE]) {
         }
     }
 }
-
+*/
 // スレッドごとに処理する行の範囲を指定する構造体
 typedef struct {
     int (*matrix)[MATRIX_SIZE];
@@ -125,6 +126,7 @@ typedef struct {
     int end_row;
 } ThreadData;
 
+/*
 // ガウスの消去法を実行する関数（マルチスレッド用）
 void *gaussian_elimination_thread(void *arg) {
     ThreadData *data = (ThreadData *)arg;
@@ -138,16 +140,17 @@ void *gaussian_elimination_thread(void *arg) {
     pthread_exit(NULL);
 }
 
+
 int maina_gausu(MTX A){
     //int A[MATRIX_SIZE][MATRIX_SIZE]; // 入力行列
     // 行列 A を初期化（例：ランダムな値を設定）
-    /*
+    
 	for (int i = 0; i < MATRIX_SIZE; i++) {
         for (int j = 0; j < MATRIX_SIZE; j++) {
             A.x[i][j] = rand() % 100; // 0から99までのランダムな整数
         }
     }
-	*/
+	
     printf("Input Matrix:\n");
     print_matrix(A.x);
 
@@ -172,7 +175,7 @@ int maina_gausu(MTX A){
     printf("Result Matrix:\n");
     print_matrix(A.x);
 }
-
+*/
 
 MTX gauss(MTX a)
 {
@@ -510,7 +513,7 @@ void matrix_multiply(int A[MATRIX_SIZE][MATRIX_SIZE], int B[MATRIX_SIZE][MATRIX_
     }
 }
 
-
+/*
 // 行列掛け算関数（SIMD版、SSE4.1）
 void matrix_multiply_simd(int A[MATRIX_SIZE][MATRIX_SIZE], int B[MATRIX_SIZE][MATRIX_SIZE], int *C, int start_row, int end_row)
 {
@@ -539,6 +542,7 @@ void matrix_multiply_simd(int A[MATRIX_SIZE][MATRIX_SIZE], int B[MATRIX_SIZE][MA
         }
     }
 }
+*/
 
 #define SHM_KEY 1234
 
