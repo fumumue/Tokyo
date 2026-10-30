@@ -8,8 +8,8 @@
 // を表す。ここではDは符号長にしている。
 #define N 1331 // 元の数
 #define M  N // 符号長　M<=N 3072
-#define K (64) // 符号の次元
-#define DEG (N)
+#define K (16) // 符号の次元
+#define DEG (K*2+1)
 #define T (K / 2) // エラーの数
 #define E (3)     // 拡大体の拡大次数
 // #define D (2187) //符号長（短縮符号）
