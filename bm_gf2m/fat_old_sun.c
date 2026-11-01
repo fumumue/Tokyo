@@ -781,8 +781,89 @@ vec bma(unsigned short s[])
     return vrev(f, L);
 }
 
-// Berlekamp-Massey(1オリジン: s[1..2T])
+
 vec bms(unsigned short s[], int kk)
+{
+    int i, j, k, ll = 0, l, d[2 * K + 1] = {0};
+    vec lo[2 * K + 1] = {0}, b[2 * K + 1] = {0}, t[2 * K + 1] = {0}, h = {0}, g = {0};
+    vec v = {0}, x = {0};
+
+    x.x[1] = 1;
+    h = (x);
+    v.x[0] = 1;
+    // f = v2o(x);
+    lo[0] = (v);
+    b[0] = lo[0];
+    ll = 0;
+    for (j = 1; j < T * 2 + 1; j++)
+    {
+        v = (lo[j - 1]);
+        k = 0;
+
+        l = deg((lo[j - 1]));
+        for (i = 1; i < l + 1; i++)
+        {
+            k ^= gf[mlt(fg[v.x[i]], fg[s[j - i]])];
+            printf("v[%d]=%d %d %d\n", i, v.x[i], s[j - i], k);
+        }
+        d[j] = s[j] ^ k;
+        printf("d[%d]=%d\n", j, d[j]);
+        if (d[j] == 0)
+        {
+            lo[j] = lo[j - 1];
+            b[j] = (vmul((b[j - 1]), (h)));
+            // ll=j-1;
+        }
+        else // if (d[j] > 0)
+        {
+            g = (vmul(kof2(d[j], (h)), (b[j - 1])));
+            t[j] = (vadd((lo[j - 1]), (g)));
+            lo[j] = t[j];
+            if (ll * 2 > (j - 1))
+            {
+                // lo[j]=t[j];
+                b[j] = (vmul((b[j - 1]), (h)));
+            }
+            else // if(2*ll <= j)
+            {
+                // printpol(o2v(t[j]));
+                // printf("==t[%d]\n", j);
+                b[j] = (kof2(gf[oinv(d[j])], (lo[j - 1])));
+                // lo[j]=t[j];
+                ll = j - ll;
+
+                if (j == 2 * T)
+                {
+                    lo[j - 1] = (vmul((lo[j - 2]), (h)));
+                    break;
+                }
+            }
+        }
+        printf("l=%d\n", ll);
+        k = 0;
+        // printpol(o2v(b[j]));
+        // printf(" ==b[%d]\n", j);
+    }
+
+    k = 0;
+    int count = 0;
+    // printpol(o2v(lo[j - 1]));
+    // printf(" ==coef\n");
+    if (deg((lo[j - 1])) == T)
+    {
+        chen((lo[j - 1]));
+    }
+    else
+    {
+        printf("baka==\n");
+        exit(1);
+    }
+
+    return (lo[j - 1]);
+}
+
+// Berlekamp-Massey(1オリジン: s[1..2T])
+vec bms3(unsigned short s[], int kk)
 {
     int i, j, L = 0;
     unsigned short d;
@@ -961,6 +1042,48 @@ vec bms2(unsigned short s[], int kk)
     return (lo[j - 1]);
 }
 
+
+
+vec bm_itr(unsigned short s[])
+{
+    int m, i, d, p;
+    unsigned short mu;
+    vec f = {0}, g = {0}, nf;
+
+    f.x[0] = 1;                           // f = 1, g = 0
+
+    for (m = 0; m < 2 * T; m++)
+    {
+        d = deg(f);                       // f はモニックで、次数 d = L
+        p = 2 * d - m - 1;
+
+        mu = 0;                           // μ = Σ_{i=0}^{d} f_i * s[i+m-d]
+        for (i = 0; i <= d; i++)
+            mu ^= gf[mlt(fg[f.x[i]], fg[s[i + m - d]])];
+
+        if (mu == 0)
+            continue;
+
+        if (p >= 0)
+        {
+            // 長さは変わらない: f += μ x^p g
+            f = vadd(f, vshift(vscale(mu, g), p));
+        }
+        else
+        {
+            // 長さが変わる: (f, g) <- (x^{-p} f + μ g, f / μ)
+            nf = vadd(vshift(f, -p), vscale(mu, g));
+            g = vscale(gf[oinv(mu)], f);
+            f = nf;
+        }
+    }
+
+    if (deg(f) != T)
+        fprintf(stderr, "bm_itr: deg=%d (expected %d)\n", deg(f), T);
+    return f;
+}
+
+
 typedef struct
 {
     vec f;
@@ -969,7 +1092,7 @@ typedef struct
 } ymo;
 
 
-vec bm_itr(unsigned short s[])
+vec bm_itr2(unsigned short s[])
 {
     vec U1[2][2] = {0}, U2[2][2][2] = {0};
     int i, j, k;
@@ -1039,6 +1162,7 @@ vec bm_itr(unsigned short s[])
         ff.x[i+1]=t.f.x[i];
         t.f=ff;
     }
+    
     if(deg(t.f)<T){
         printf("few baka\n");
         exit(1);
@@ -1075,18 +1199,18 @@ int main()
     for (i = 0; i < K; i++)
     sy[i] = x.x[K - 1 - i];
 
-    v = bma(sy);                 // bms の場合は s[i+1] = x.x[K-1-i] として bms(s, K+1)
-    x = chen(v);
-    //exit(1);
-    for (i = 0; i < N; i++)
-    if (x.x[i])
-        printf("e=%d\n", i);    //v = bma(x.x);    // Berlekamp-Massey Algorithm
-    //v=bms(x.x,K+1);
     unsigned short cc[K*2+1]={0};
     for(int i=0;i<K;i++)
     cc[i+1]=x.x[i];
-    //v=bms(cc,K+1);
-    v=bm_itr(x.x);
+
+    v = bma(sy);                 // bms の場合は s[i+1] = x.x[K-1-i] として bms(s, K+1)
+    //v=bms2(cc,K+1);
+    //v=bm_itr(sy);
+    //exit(1);
+
+    for (i = 0; i < N; i++)
+    if (x.x[i])
+        printf("e=%d\n", i);    //v = bma(x.x);    // Berlekamp-Massey Algorithm
     printpol(v);
     printf("\n");
     //exit(1);
@@ -1104,7 +1228,7 @@ int main()
     x=chen(v);
     for(i=0;i<N;i++){
     if(x.x[i]>0)
-    printf("e=%d\n",fg[x.x[i]]);
+    printf("e=%d %d\n",i, x.x[i]);
     }
     exit(1);
 }

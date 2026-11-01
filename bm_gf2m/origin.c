@@ -619,75 +619,8 @@ OP synd(unsigned short zz[], int kk)
     return f;
 }
 
-// f に体の元 c をかける(デバッグ出力なし)
-static vec vscale(unsigned short c, vec f)
-{
-    int i, k = deg(f);
-    vec h = {0};
-
-    if (c == 0)
-        return h;
-    for (i = 0; i <= k; i++)
-        if (f.x[i] > 0)
-            h.x[i] = gf[mlt(fg[c], fg[f.x[i]])];
-    return h;
-}
-
-// f * x^n
-static vec vshift(vec f, int n)
-{
-    int i, k = deg(f);
-    vec h = {0};
-
-    for (i = 0; i <= k && i + n < DEG; i++)
-        h.x[i + n] = f.x[i];
-    return h;
-}
-
-// C(x)(長さ L)から Λ(x) = x^L * C(1/x) を作る。根は誤り位置 α_j(0 も可)
-static vec vrev(vec C, int L)
-{
-    int i;
-    vec r = {0};
-
-    for (i = 0; i <= L && i < DEG; i++)
-        r.x[L - i] = C.x[i];
-    return r;
-}
-
-// Λ の根を全探索。e.x[j]==1 なら位置 j が誤り(位置0も含む)
-vec chen(vec f)
-{
-    vec e = {0};
-    int i, n, x, count = 0;
-    unsigned short z;
-
-    n = deg(f);
-    for (x = 0; x < N; x++)
-    {
-        z = f.x[0];                       // x=0 のとき f(0) は定数項
-        if (x > 0)
-            for (i = 1; i <= n; i++)
-                if (f.x[i] > 0)
-                    z ^= gf[mlt(mltn(i, fg[x]), fg[f.x[i]])];
-        if (z == 0)
-        {
-            e.x[x == 0 ? 0 : fg[x]] = 1;
-            count++;
-        }
-    }
-
-    if (count != T)
-    {
-        printf("decode failure: roots=%d deg=%d\n", count, n);
-        exit(1);
-    }
-    return e;
-}
-
-
 // chen探索
-vec chen3(vec f)
+vec chen(vec f)
 {
     vec e = {0};
     int i, count = 0, n, x = 0;
@@ -722,98 +655,66 @@ vec chen3(vec f)
     return e;
 }
 
-
 vec bma(unsigned short s[])
 {
-    int L = 0, m = -1, k, i;
-    unsigned short d, bd = 1, coef;
-    vec f = {0}, g = {0}, h;
+    int L = 0, m = -1, d[K] = {0}, k = 0, i, e;
+    vec f = {0}, g = {0}, h, v, c = {0}, cc = {0};
 
+    c.x[1] = 1;
     f.x[0] = g.x[0] = 1;
 
-    for (k = 0; k < 2 * T; k++)
+    while (k <= (2 * T - 1))
     {
-        d = 0;                            // d = Σ_{i=0}^{L} f_i * s[k-i]
-        for (i = 0; i <= L; i++)
-            d ^= gf[mlt(fg[f.x[i]], fg[s[k - i]])];
+        e = 0;
+        for (i = 0; i < L; i++)
+            e ^= gf[mlt(fg[f.x[i]], fg[s[k - i]])];
+        printf("L=%d i=%d\n", L, i);
+        d[k] = gf[mlt(fg[f.x[L]], fg[s[k - i]])] ^ e; // s[k] ^ e;
+        printf("d[%d]=%d s[k]=%d\n", k, d[k], s[k]);
 
-        if (d == 0)
-            continue;
-
-        h = f;
-        coef = gf[mlt(fg[d], oinv(bd))];  // d / bd (oinv は対数の添字を返す)
-        f = vadd(f, vshift(vscale(coef, g), k - m));
-
-        if (2 * L <= k)
+        printpol(f);
+        printf("%d,%d====f\n", k, d[k]);
+        if (d[k] > 0)
         {
-            L = k + 1 - L;
-            m = k;
-            g = h;
-            bd = d;
-        }
-    }
-
-    if (L != T)
-        fprintf(stderr, "bma: L=%d (expected %d)\n", L, T);
-    return vrev(f, L);
-}
-
-
-
-// Berlekamp-Massey(1オリジン: s[1..2T])
-vec bms2(unsigned short s[], int kk)
-{
-    int i, j, L = 0;
-    unsigned short d;
-    vec C = {0}, B = {0}, old;
-
-    (void)kk;
-    C.x[0] = 1;
-    B.x[0] = 1;
-
-    for (j = 1; j <= 2 * T; j++)
-    {
-        // 不一致量 d = s[j] + Σ_{i=1}^{L} C_i * s[j-i]
-        d = s[j];
-        for (i = 1; i <= L; i++)
-            d ^= gf[mlt(fg[C.x[i]], fg[s[j - i]])];
-
-        if (d == 0)
-        {
-            B = vshift(B, 1);
-        }
-        else if (2 * L > j - 1)
-        {
-            // 長さは変わらない
-            C = vadd(C, vshift(vscale(d, B), 1));
-            B = vshift(B, 1);
-        }
-        else
-        {
-            // 長さが変わる
-            if (j == 2 * T)
+            h = f;
+            memset(v.x, 0, sizeof(v.x));
+            v.x[k - m] = 1;
+            unsigned short a;
+            a = (m < 0) ? 1 : oinv(d[m]);
+            cc = kof2(gf[mlt(fg[d[k]], a)], g);
+            f = vadd(f, vmul(cc, v));
+            if (L <= k / 2 + 1)
             {
-                // 最後の1項だけが残った = 位置0の誤り。根0を足して終わる
-                C = vshift(C, 1);
-                break;
+                L = k + 1 - L;
+                m = k;
+                g = h;
             }
-            old = C;
-            C = vadd(C, vshift(vscale(d, B), 1));
-            B = vscale(gf[oinv(d)], old);   // B = old / d
-            L = j - L;
         }
+        k++;
+        // if(deg(f)==T)
+        // break;
     }
-
-    if (deg(C) > T)
+    printpol(f);
+    printf("==loc\n");
+    if (deg(f) == T + 1)
     {
-        printf("baka==\n");
+        for (i = 0; i < T + 1; i++)
+            cc.x[i] = f.x[i + 1];
+        chen(cc);
+        return cc;
+    }else if (deg(f) == T)
+    {
+        chen(f);
+        return f;
+    }else{
+        printf("baka\n");
         exit(1);
     }
-    return C;
+
+    //return f;
 }
 
-
-vec bms3(unsigned short s[], int kk)
+vec bms(unsigned short s[], int kk)
 {
     int i, j, k, ll = 0, l, d[2 * K + 1] = {0};
     vec lo[2 * K + 1] = {0}, b[2 * K + 1] = {0}, t[2 * K + 1] = {0}, h = {0}, g = {0};
@@ -893,47 +794,6 @@ vec bms3(unsigned short s[], int kk)
     return (lo[j - 1]);
 }
 
-
-vec bm_itr(unsigned short s[])
-{
-    int m, i, d, p;
-    unsigned short mu;
-    vec f = {0}, g = {0}, nf;
-
-    f.x[0] = 1;                           // f = 1, g = 0
-
-    for (m = 0; m < 2 * T; m++)
-    {
-        d = deg(f);                       // f はモニックで、次数 d = L
-        p = 2 * d - m - 1;
-
-        mu = 0;                           // μ = Σ_{i=0}^{d} f_i * s[i+m-d]
-        for (i = 0; i <= d; i++)
-            mu ^= gf[mlt(fg[f.x[i]], fg[s[i + m - d]])];
-
-        if (mu == 0)
-            continue;
-
-        if (p >= 0)
-        {
-            // 長さは変わらない: f += μ x^p g
-            f = vadd(f, vshift(vscale(mu, g), p));
-        }
-        else
-        {
-            // 長さが変わる: (f, g) <- (x^{-p} f + μ g, f / μ)
-            nf = vadd(vshift(f, -p), vscale(mu, g));
-            g = vscale(gf[oinv(mu)], f);
-            f = nf;
-        }
-    }
-
-    if (deg(f) != T)
-        fprintf(stderr, "bm_itr: deg=%d (expected %d)\n", deg(f), T);
-    return f;
-}
-
-
 typedef struct
 {
     vec f;
@@ -942,7 +802,7 @@ typedef struct
 } ymo;
 
 
-vec bm_itr2(unsigned short s[])
+vec bm_itr(unsigned short s[])
 {
     vec U1[2][2] = {0}, U2[2][2][2] = {0};
     int i, j, k;
@@ -1012,7 +872,6 @@ vec bm_itr2(unsigned short s[])
         ff.x[i+1]=t.f.x[i];
         t.f=ff;
     }
-    
     if(deg(t.f)<T){
         printf("few baka\n");
         exit(1);
@@ -1036,25 +895,19 @@ int main()
     // van(K);          // RS-Code generate
     vv(K);
     while(1){
-    for(i=0;i<T;i++)
-    z1[i]=1;
-    //mkerr(z1, T);    // generate error vector
+    //for(i=0;i<T;i++)
+    //z1[i]=1;
+    mkerr(z1, T);    // generate error vector
 
     f = synd(z1, K); // calc syndrome
     x = o2v(f);      // transorm to vec
-    
-    unsigned short sy[K];
-    for (i = 0; i < K; i++)
-    sy[i] = x.x[K - 1 - i];      // x.x は逆順なので順方向に戻す
-
-    //v = bma(sy);    // Berlekamp-Massey Algorithm
-    //v=bm_itr(sy);
+    //v = bma(x.x);    // Berlekamp-Massey Algorithm
+    //v=bm_itr(x.x);
     
     
     for (i = 0; i < K; i++)
         s[i + 1] = x.x[i];
-
-        v = bms2(s, K+1);
+    v = bms(s, K + 1);
     
     printf("the errors below\n");
     for (i = 0; i < N; i++)
