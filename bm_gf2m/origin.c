@@ -676,7 +676,8 @@ vec chen(vec f)
             count++;
         }
     }
-    if (count != n)
+
+    if (count != T)
     {
         printf("decode failure: roots=%d deg=%d\n", count, n);
         exit(1);
@@ -758,66 +759,9 @@ vec bma(unsigned short s[])
 }
 
 
-vec bma2(unsigned short s[])
-{
-    int L = 0, m = -1, d[K] = {0}, k = 0, i, e;
-    vec f = {0}, g = {0}, h, v, c = {0}, cc = {0};
 
-    c.x[1] = 1;
-    f.x[0] = g.x[0] = 1;
-
-    while (k <= (2 * T - 1))
-    {
-        e = 0;
-        for (i = 0; i < L; i++)
-            e ^= gf[mlt(fg[f.x[i]], fg[s[k - i]])];
-        printf("L=%d i=%d\n", L, i);
-        d[k] = gf[mlt(fg[f.x[L]], fg[s[k - i]])] ^ e; // s[k] ^ e;
-        printf("d[%d]=%d s[k]=%d\n", k, d[k], s[k]);
-
-        printpol(f);
-        printf("%d,%d====f\n", k, d[k]);
-        if (d[k] > 0)
-        {
-            h = f;
-            memset(v.x, 0, sizeof(v.x));
-            v.x[k - m] = 1;
-            unsigned short a;
-            a = (m < 0) ? 1 : oinv(d[m]);
-            cc = kof2(gf[mlt(fg[d[k]], a)], g);
-            f = vadd(f, vmul(cc, v));
-            if (L <= k / 2 + 1)
-            {
-                L = k + 1 - L;
-                m = k;
-                g = h;
-            }
-        }
-        k++;
-        // if(deg(f)==T)
-        // break;
-    }
-    printpol(f);
-    printf("==loc\n");
-    if (deg(f) == T + 1)
-    {
-        for (i = 0; i < T + 1; i++)
-            cc.x[i] = f.x[i + 1];
-        chen(cc);
-        return cc;
-    }else if (deg(f) == T)
-    {
-        chen(f);
-        return f;
-    }else{
-        printf("baka\n");
-        exit(1);
-    }
-
-    //return f;
-}
-
-vec bms(unsigned short s[], int kk)
+// Berlekamp-Massey(1オリジン: s[1..2T])
+vec bms2(unsigned short s[], int kk)
 {
     int i, j, L = 0;
     unsigned short d;
@@ -829,6 +773,7 @@ vec bms(unsigned short s[], int kk)
 
     for (j = 1; j <= 2 * T; j++)
     {
+        // 不一致量 d = s[j] + Σ_{i=1}^{L} C_i * s[j-i]
         d = s[j];
         for (i = 1; i <= L; i++)
             d ^= gf[mlt(fg[C.x[i]], fg[s[j - i]])];
@@ -839,25 +784,36 @@ vec bms(unsigned short s[], int kk)
         }
         else if (2 * L > j - 1)
         {
+            // 長さは変わらない
             C = vadd(C, vshift(vscale(d, B), 1));
             B = vshift(B, 1);
         }
         else
         {
+            // 長さが変わる
+            if (j == 2 * T)
+            {
+                // 最後の1項だけが残った = 位置0の誤り。根0を足して終わる
+                C = vshift(C, 1);
+                break;
+            }
             old = C;
             C = vadd(C, vshift(vscale(d, B), 1));
-            B = vscale(gf[oinv(d)], old);  // B = old / d
+            B = vscale(gf[oinv(d)], old);   // B = old / d
             L = j - L;
         }
     }
 
-    if (L != T)
-        fprintf(stderr, "bms: L=%d (expected %d)\n", L, T);
-    return vrev(C, L);
+    if (deg(C) > T)
+    {
+        printf("baka==\n");
+        exit(1);
+    }
+    return C;
 }
 
 
-vec bms2(unsigned short s[], int kk)
+vec bms3(unsigned short s[], int kk)
 {
     int i, j, k, ll = 0, l, d[2 * K + 1] = {0};
     vec lo[2 * K + 1] = {0}, b[2 * K + 1] = {0}, t[2 * K + 1] = {0}, h = {0}, g = {0};
@@ -1056,6 +1012,7 @@ vec bm_itr2(unsigned short s[])
         ff.x[i+1]=t.f.x[i];
         t.f=ff;
     }
+    
     if(deg(t.f)<T){
         printf("few baka\n");
         exit(1);
@@ -1091,13 +1048,13 @@ int main()
     sy[i] = x.x[K - 1 - i];      // x.x は逆順なので順方向に戻す
 
     //v = bma(sy);    // Berlekamp-Massey Algorithm
-    v=bm_itr(sy);
+    //v=bm_itr(sy);
     
     
     for (i = 0; i < K; i++)
         s[i + 1] = x.x[i];
-        //v=bm_itr(x.x);
-        //v = bms2(s, K + 1);
+
+        v = bms2(s, K+1);
     
     printf("the errors below\n");
     for (i = 0; i < N; i++)
