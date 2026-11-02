@@ -1,0 +1,1 @@
+/usr/bin/cc "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o" -o gf2m_peter_ptar 

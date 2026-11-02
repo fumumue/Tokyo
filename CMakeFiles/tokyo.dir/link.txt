@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/tokyo.dir/ymo.c.o -o tokyo 

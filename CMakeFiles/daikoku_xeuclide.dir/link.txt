@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/daikoku_xeuclide.dir/daikoku/Xeuclide.c.o -o daikoku_xeuclide  /usr/lib/gcc/x86_64-linux-gnu/13/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a 
