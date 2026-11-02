@@ -271,13 +271,14 @@ int patterson_q(const short *syndrome, const short *gcoef, int phimin, int phima
 {
     if (!q_setup(gcoef))
         return -1;
-    for (int i = 0; i < K; i++)
-        printf("input syndrome[%d]=%d\n", i, syndrome[i]);
+    //for (int i = 0; i < K; i++)
+    //    printf("input syndrome[%d]=%d\n", i, syndrome[i]);
 
     q_res s = q_bm_to_patterson_syndrome(syndrome);
 
     for (int i = 0; i < K; i++)
-        printf("Patterson syndrome[%d]=%d\n", i, s.c[i]);
+        printf("syndrome[%d] = bm[%4d]  pat[%4d]\n", i, syndrome[i],s.c[i]);
+        //exit(1);
 
     int nz = 0;
     for (int i = 0; i < K; i++)
