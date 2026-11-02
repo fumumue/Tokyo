@@ -41,15 +41,46 @@ make -C marimo niederreiter_demo
 
 - 暗号文シンドロームと、復号器に渡すBMシンドローム
 - 変換後のPattersonシンドロームの係数
-- BM側の列番号、注入した誤り値、対応するPatterson位置、復号された値の比較表
+- BM復号器の誤り位置多項式の次数、根の数、シンドロームとの整合性、元の誤りとの一致
+- BM側の列番号、注入した誤り値、BM多項式の根、対応するPatterson位置、Patterson復号結果の比較表
 - Patterson復号器が見つけた候補数と、元の誤りベクトルを復元できたかどうか
 
 スクランブルありのモードでは、BM側の列番号とPatterson側の位置番号は通常異なります。
 比較表では列置換による対応を表示します。`raw` モードでは両者の位置番号が同じです。
 
-復号候補が元の誤りベクトルと完全一致した場合、プログラムは終了コード0を返します。
-それ以外の場合は0以外を返します。1回の実行で成功しても、すべての誤りベクトルや鍵で
-復号が成功する保証にはなりません。
+このデモでは、同じBMシンドロームにBM復号とPatterson復号の両方を適用します。
+BM復号は長さ `K` のシンドローム列から誤り位置多項式を求め、その根を誤り位置として調べます。
+現在の `K=16` では、通常のBM復号の訂正範囲は最大 `K/2=8` 個です。
+デモで作る誤り値はすべて1なので、BMの比較は誤り位置（サポート）の一致を調べています。
+BM多項式の根は候補位置であり、特に訂正範囲を超えた場合は実際の誤り位置とは限りません。
+`BM decoded support matches syndrome` が `yes` の場合にだけ、根の集合が入力シンドロームと整合します。
+`BM original error recovered` は根の集合が注入位置と完全一致したことを示します。
+
+プログラムの終了コードは従来どおりPatterson復号の結果に基づきます。Patterson復号候補が
+元の誤りベクトルと一致すれば0、一致しなければ0以外です。BM復号の成功・失敗は出力で別に確認してください。
+1回の実行で成功しても、すべての誤りベクトルや鍵で復号が成功する保証にはなりません。
+
+## 代表的な実行結果
+
+2026-11-02に `./marimo/niederreiter_demo 16 raw` を実行した一例です。
+`raw` モードで重み16（`K=16`）の誤りを入れたところ、BM復号は誤り位置を復元できず、
+得られた根の集合もシンドロームと一致しませんでした。一方、同じシンドロームをPatterson用に
+変換して復号すると、注入した誤りと一致する候補が1つ見つかりました。
+
+```text
+Niederreiter-style demo: K=16, error weight=16, mode=raw (no A/P scramble)
+BM decoder locator degree: 8 (unique-decoding limit K/2=8)
+BM locator roots (not necessarily valid errors): 1
+BM decoded support matches syndrome: no
+BM original error recovered: no
+candidate 1 matches injected errors: yes
+Patterson candidates: 1
+original error recovered: yes
+```
+
+この出力は「この鍵・この誤りではBM復号に失敗し、Patterson復号では復元できた」一例を示します。
+鍵と誤り位置は実行ごとにランダムに生成されるため、根の数などのBMの詳細出力は実行ごとに変わります。
+この一例から、重み16なら必ず同じ結果になる、またはPattersonが常に復元できるとは結論できません。
 
 ## Patterson復号成功率の実験
 

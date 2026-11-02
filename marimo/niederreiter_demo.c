@@ -132,10 +132,65 @@ static void print_syndrome(const char *label, const short *syndrome)
     printf("\n");
 }
 
+static int bm_decode_errors(const short *syndrome, short decoded[M], int *locator_degree)
+{
+    short locator[K + 1] = {1}, previous[K + 1] = {1};
+    memset(decoded, 0, sizeof(short) * M);
+    int degree = 0, shift = 1;
+    short last_discrepancy = 1;
+
+    for (int n = 0; n < K; n++)
+    {
+        short discrepancy = syndrome[n];
+        for (int i = 1; i <= degree; i++)
+            discrepancy = q_add(discrepancy,
+                                q_mul(locator[i], syndrome[n - i]));
+        if (discrepancy == 0)
+        {
+            shift++;
+            continue;
+        }
+
+        short old_locator[K + 1];
+        memcpy(old_locator, locator, sizeof(old_locator));
+        short factor = q_mul(discrepancy, q_inv(last_discrepancy));
+        for (int i = 0; i + shift <= K; i++)
+            locator[i + shift] = q_sub(locator[i + shift],
+                                       q_mul(factor, previous[i]));
+
+        if (2 * degree <= n)
+        {
+            degree = n + 1 - degree;
+            memcpy(previous, old_locator, sizeof(previous));
+            last_discrepancy = discrepancy;
+            shift = 1;
+        }
+        else
+        {
+            shift++;
+        }
+    }
+
+    *locator_degree = degree;
+    int roots = 0;
+    for (int position = 0; position < M; position++)
+    {
+        short value = 0;
+        for (int i = degree; i >= 0; i--)
+            value = q_add(q_mul(value, (short)position), locator[i]);
+        if (value == 0)
+        {
+            decoded[position] = 1;
+            roots++;
+        }
+    }
+    return roots;
+}
+
 int main(int argc, char **argv)
 {
     static short a[K][K], a_inv[K][K];
-    static short error[M], ciphertext[K], bm_syndrome[K];
+    static short error[M], ciphertext[K], bm_syndrome[K], bm_decoded[M];
     static short decoded[Q_MAXC][M];
     static int permutation[M];
 
@@ -225,16 +280,40 @@ int main(int argc, char **argv)
         printf(" %d", converted_patterson.c[i]);
     printf("\n");
 
+    int bm_locator_degree = 0;
+    int bm_roots = bm_decode_errors(bm_syndrome, bm_decoded, &bm_locator_degree);
+    int bm_recovered = bm_roots == weight;
+    int bm_syndrome_matches = 1;
+    for (int row = 0; row < K; row++)
+    {
+        short sum = 0;
+        for (int position = 0; position < M; position++)
+            if (bm_decoded[position])
+                sum = q_add(sum, q_mul(mat[row][position], bm_decoded[position]));
+        if (sum != bm_syndrome[K - 1 - row])
+            bm_syndrome_matches = 0;
+    }
+    for (int col = 0; col < M; col++)
+        if (bm_decoded[permutation[col]] != error[col])
+            bm_recovered = 0;
+
+    printf("\nBM decoder locator degree: %d (unique-decoding limit K/2=%d)\n",
+           bm_locator_degree, K / 2);
+    printf("BM locator roots (not necessarily valid errors): %d\n", bm_roots);
+    printf("BM decoded support matches syndrome: %s\n",
+           bm_syndrome_matches ? "yes" : "no");
+    printf("BM original error recovered: %s\n", bm_recovered ? "yes" : "no");
+
     int candidates = patterson_q(bm_syndrome, (const short *)g.x, 1, Pr - 1, decoded);
     int recovered = 0;
-    printf("\n| BM column | BM error | Pat location | Pat decoded |\n");
-    printf("|-----------:|---------:|-------------:|------------:|\n");
+    printf("\n| BM column | BM error | BM locator root | Pat location | Pat decoded |\n");
+    printf("|-----------:|---------:|---------------:|-------------:|------------:|\n");
     if (candidates == 0)
     {
         for (int j = 0; j < M; j++)
             if (error[j])
-                printf("| %9d | %8d | %12d | %11s |\n",
-                       j, error[j], permutation[j], "なし");
+                printf("| %9d | %8d | %14d | %12d | %11s |\n",
+                       j, error[j], bm_decoded[permutation[j]], permutation[j], "なし");
     }
     for (int c = 0; c < candidates; c++)
     {
@@ -250,9 +329,9 @@ int main(int argc, char **argv)
         for (int j = 0; j < M; j++)
         {
             short decoded_value = decoded[c][permutation[j]];
-            if (error[j] || decoded_value)
-                printf("| %9d | %8d | %12d | %11d |%s\n",
-                       j, error[j], permutation[j], decoded_value,
+            if (error[j] || bm_decoded[permutation[j]] || decoded_value)
+                printf("| %9d | %8d | %14d | %12d | %11d |%s\n",
+                       j, error[j], bm_decoded[permutation[j]], permutation[j], decoded_value,
                        error[j] == decoded_value ? "" : " mismatch");
         }
         printf("candidate %d matches injected errors: %s\n",
