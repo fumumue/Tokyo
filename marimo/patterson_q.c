@@ -535,7 +535,7 @@ int patterson_check(const short *zz, const short *gcoef, int phimin, int phimax,
         printf("pos  original  decoded\n");
         for (int i = 0; i < M; i++)
             if (zz[i] || errs[c][i])
-                printf("%4d  %8d  %7d%s\n", i, zz[i], errs[c][i],
+                printf("i= %4d  %8d  %7d%s\n", i, zz[i], errs[c][i],
                        zz[i] == errs[c][i] ? "" : "  <--");
         if (!mism && hit)
             *hit = 1;
