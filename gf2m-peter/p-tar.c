@@ -207,11 +207,44 @@ vec vmul(vec a, vec b)
 unsigned short vb[K * 2][N] = {0};
 unsigned short gt[K * 2][K * 2] = {0};
 
+
+void van()
+{
+  int i, j, k;
+
+  printf("van der\n");
+
+  for (i = 0; i < N; i++)
+    vb[0][i] = 1;
+  //#pragma omp parallel for private(i, j)
+  for (i = 1; i < K; i++)
+  {
+    for (j = 0; j < N; j++)
+      vb[i][j] = gf[mltn(i, fg[j])];
+  }
+}
+
+void ogt()
+{
+  int i, j, k;
+  OP w = {0};
+  unsigned short abc[N][K] = {0};
+
+#pragma omp parallel for private(i, j)
+  for (i = 0; i < K; i++)
+  {
+    for (j = 0; j < K - i; j++)
+      gt[i][j + i] = g[j];
+  }
+}
+
+/*
 void van(int kk)
 {
     int i, j;
 
     printf("van der\n");
+    */
     /*
     for (i = 0; i < N; i++){
         mat[i][0] = vb[0][i] = 1;
@@ -220,6 +253,7 @@ void van(int kk)
     printf("\n");
     */
     // #pragma omp parallel for private(i, j)
+    /*
     for (i = 0; i < kk; i++)
     {
         for (j = 1; j < N; j++)
@@ -252,6 +286,7 @@ void ogt(unsigned short pp[], int kk)
     }
     // exit(1);
 }
+*/
 
 // 配列の値を係数として多項式に設定する
 OP setpol(unsigned short f[], int n)
@@ -992,6 +1027,7 @@ unsigned short eval(OP f, unsigned short x)
 }
 
 
+
 OP vv(int kk)
 {
     int i, j;
@@ -1183,7 +1219,7 @@ aa:
 
             for (int k = 0; k < K; k++)
                 s ^= gf[mlt(fg[gt[k][i]], fg[ma[j][k]])];
-            // printf("%d,",s);
+            printf("%d,",s);
             mat[j][i] = s;
         }
         printf("\n");
@@ -1320,6 +1356,86 @@ vec bma(unsigned short s[]) // sはシンドロームの値
 }
 
 vec bms(unsigned short s[], int kk)
+{
+    int i, j, k, ll = 0, l, d[2 * K + 1] = {0};
+    vec lo[2 * K + 1] = {0}, b[2 * K + 1] = {0}, t[2 * K + 1] = {0}, h = {0}, g = {0};
+    vec v = {0}, x = {0};
+
+    x.x[1] = 1;
+    h = (x);
+    v.x[0] = 1;
+    // f = v2o(x);
+    lo[0] = (v);
+    b[0] = lo[0];
+    ll = 0;
+    for (j = 1; j < T * 2 + 1; j++)
+    {
+        v = (lo[j - 1]);
+        k = 0;
+
+        l = deg((lo[j - 1]));
+        for (i = 1; i < l + 1; i++)
+        {
+            k ^= gf[mlt(fg[v.x[i]], fg[s[j - i]])];
+            printf("v[%d]=%d %d %d\n", i, v.x[i], s[j - i], k);
+        }
+        d[j] = s[j] ^ k;
+        printf("d[%d]=%d\n", j, d[j]);
+        if (d[j] == 0)
+        {
+            lo[j] = lo[j - 1];
+            b[j] = (vmul((b[j - 1]), (h)));
+            // ll=j-1;
+        }
+        else // if (d[j] > 0)
+        {
+            g = (vmul(kof2(d[j], (h)), (b[j - 1])));
+            t[j] = (vadd((lo[j - 1]), (g)));
+            lo[j] = t[j];
+            if (ll * 2 > (j - 1))
+            {
+                // lo[j]=t[j];
+                b[j] = (vmul((b[j - 1]), (h)));
+            }
+            else // if(2*ll <= j)
+            {
+                // printpol(o2v(t[j]));
+                // printf("==t[%d]\n", j);
+                b[j] = (kof2(gf[oinv(d[j])], (lo[j - 1])));
+                // lo[j]=t[j];
+                ll = j - ll;
+
+                if (j == 2 * T)
+                {
+                    lo[j - 1] = (vmul((lo[j - 2]), (h)));
+                    break;
+                }
+            }
+        }
+        printf("l=%d\n", ll);
+        k = 0;
+        // printpol(o2v(b[j]));
+        // printf(" ==b[%d]\n", j);
+    }
+
+    k = 0;
+    int count = 0;
+    // printpol(o2v(lo[j - 1]));
+    // printf(" ==coef\n");
+    if (deg((lo[j - 1])) == T)
+    {
+        chen((lo[j - 1]));
+    }
+    else
+    {
+        printf("baka==\n");
+        exit(1);
+    }
+
+    return (lo[j - 1]);
+}
+
+vec bms2(unsigned short s[], int kk)
 {
     int i, j, k, ll = 0, l, d[2 * K + 1] = {0};
     vec lo[2 * K + 1] = {0}, b[2 * K + 1] = {0}, t[2 * K + 1] = {0}, h = {0}, g = {0};
@@ -1663,12 +1779,12 @@ int main()
     OP f = {0};
 
     srand(clock());
-    // mkg(K); // Goppa Code (EEA type)
-    van(K);          // RS-Code generate
+     mkg(K); // Goppa Code (EEA type)
+    //van(K);          // RS-Code generate
     //f=vv(K);           // Goppa Code's Parity Check (Berlekamp type)
     //mkerr(z1, T);    // generate error vector
     z1[1]=1;
-    z1[3]=1;
+    z1[2]=1;
     f = synd(z1, K); // calc syndrome
     x = o2v(f);      // transorm to vec
     // r = bma(x.x);    // Berlekamp-Massey Algorithm
@@ -1719,93 +1835,12 @@ int main()
         printf("\n");
     }
     sol(b);
-    exit(1);
-
-    ee.x[0][0]=gf[5];
-    ee.x[0][1]=gf[7];
-    ee.x[0][2]=gf[6];
-    ee.x[1][0]=gf[2];
-    ee.x[1][1]=gf[6];
-    ee.x[1][2]=gf[4];
-    //renritz(ee);
-    /*
-    ff.x[0][0]=gf[7];
-    ff.x[0][1]=gf[1];
-    ff.x[1][0]=gf[3];
-    ff.x[1][1]=gf[6];
-    matinv(ee,2);
-    //matmul(ee,ff); 
-*/
-
-    v = renritz(b);
-    for(i=0;i<N;i++)
-    if(v.x[i]>0)
-    printf("zz=%d,",fg[v.x[i]]);
-    printf("\n");
     //exit(1);
-    //v=renritz(b);
-    for (int i = 0; i < K / 2; i++){
-            if(gf[mlt((fg[v.x[i]]),(fg[v.x[i]]))]==N-1){
-                    printf("%d,%d %d %d\n", 2,fg[v.x[i]],v.x[i],i);
-            }else{
-        printf("%d,%d %d %d\n", gf[mlt((fg[v.x[i]]),(fg[v.x[i]]))],fg[v.x[i]],v.x[i],i);
-            }
-    //printf("\n");
-    }
-    for (i = 0; i < N; i++)
-        if (z1[i] > 0)
-            printf("anaser=%d %d\n", i, z1[i]);
-    printf("\n");
-    // exit(1);
-    for(int j=0;j<T;j++){
-        ff.x[j][0]=xx.x[j];
-    for(i=0;i<T;i++){
-        ee.x[0][i]=v.x[i];
-        ee.x[j][i]=gf[mltn(j+1,fg[v.x[i]])];
-    }
-    }
-    /*
-    ee.x[0][0] = v.x[0];
-    ee.x[0][1] = v.x[1];
-    ff.x[0][0]=xx.x[0];
-    ee.x[1][0] = gf[mlt(fg[v.x[0]], fg[v.x[0]])];
-    ee.x[1][1] = gf[mlt(fg[v.x[1]], fg[v.x[1]])];
-    ff.x[1][0]=xx.x[1];
-    ff.x[2][0]=0; //x.x[1];
-    ff.x[2][1]=0; //x.x[0];
-    */
-    //exit(1);
-    ee = matinv(ee, K/2);
-    for(i=0;i<2;i++){
-        //for(int j=0;j<2;j++)
-        printf("%d,",ff.x[i][0]);
-        printf("\n");
-    }
-    //exit(1);
-    //
-    //
-    //renritz(ee);
-    // exit(1);
-    for (int i = 0; i < K / 2; i++)
-    {
-        unsigned short k=0,l=0;
-        printf("xx=%d\n", ff.x[i][0]);
-        ff.x[K/2][i]=0;
-        for (int j = 0; j < K / 2; j++)
-        {
-            printf("%d,",ee.x[i][j]);
-            ff.x[K/2][i] ^= gf[mlt(fg[ee.x[i][j]], fg[ff.x[j][0]])];
-            k=eval(f,fg[v.x[i]]);
-        }
-        l=ff.x[K/2][i];
-        k=gf[mlt(oinv(k),fg[l])];
-        printf("\nff %d %d\n",l, gf[oinv(k)]);
-    }
-    exit(1);
 
     for (i = 0; i < K; i++)
-        s[i + 1] = x.x[i];
-    v = bms(s, K + 1);
+        s[i + 1] = xx.x[i];
+    
+    v = bma(s);
     printf("the errors below\n");
     for (i = 0; i < N; i++)
     {
