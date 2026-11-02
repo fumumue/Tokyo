@@ -23,6 +23,7 @@ typedef struct
 } q_res; // g を法とする剰余 (係数 K 個)
 
 static short q_g[K + 1];      // モニックにした g
+static short q_g_lead;        // BM 検査行列が使う元の g の最高次係数
 static short q_Finv[K][K];    // Frobenius 行列 (列 i = x^(i*Pr) mod g) の逆行列
 static long q_rootexp;        // Pr^(E-1) : 体の元の p 乗根を取る指数
 
@@ -175,6 +176,7 @@ static int q_setup(const short *gcoef)
     short lead = gcoef[K];
     if (lead == 0)
         return 0;
+    q_g_lead = lead;
     short il = q_inv(lead);
     for (int i = 0; i <= K; i++)
         q_g[i] = q_mul(gcoef[i], il);
@@ -215,21 +217,22 @@ static q_res q_root(q_res z)
     return r;
 }
 
-// synd() の vec.x に格納された通常順シンドロームを、g の係数から作る
-// 上三角 Toeplitz 行列で Patterson 用シンドロームに変換する。
+// synd() の vec.x に格納された逆順シンドロームを、g の係数から Patterson 用に変換する。
 static q_res q_bm_to_patterson_syndrome(const short *syndrome)
 {
-    static short toeplitz[K][K];
+    static short transform[K][K];
     for (int i = 0; i < K; i++)
         for (int j = 0; j < K; j++)
-            toeplitz[i][j] = (j >= i) ? q_g[K + i - j] : 0;
+            transform[i][j] = (i + j < K)
+                                  ? q_mul(q_g_lead, q_g[i + j + 1])
+                                  : 0;
 
     q_res s = q_zero();
     for (int i = 0; i < K; i++)
     {
         short acc = 0;
-        for (int j = i; j < K; j++)
-            acc = q_add(acc, q_mul(toeplitz[i][j], syndrome[K - 1 - j]));
+        for (int j = 0; j + i < K; j++)
+            acc = q_add(acc, q_mul(transform[i][j], syndrome[K - 1 - j]));
         s.c[i] = q_neg(acc);
     }
     return s;
@@ -417,7 +420,7 @@ int patterson_q(const short *syndrome, const short *gcoef, int phimin, int phima
             for (int i = 0; i < M; i++)
                 if (e[i])
                     acc = q_add(acc, q_mul(e[i], mat[j][i]));
-            if (acc != syndrome[j])
+            if (acc != syndrome[K - 1 - j])
                 okv = 0;
         }
         if (!okv)
@@ -481,7 +484,7 @@ void patterson_experiment(int wmin, int wmax, int ng, int trials, int maxval, in
                     for (int i = 0; i < M; i++)
                         if (ev[i])
                             acc = q_add(acc, q_mul(ev[i], mat[j][i]));
-                    S[j] = acc;
+                    S[K - 1 - j] = acc;
                 }
                 int n = patterson_q(S, gc, 1, phimax, errs);
                 if (n < 0)

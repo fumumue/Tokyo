@@ -5548,6 +5548,7 @@ void stamena()
 }
 
 // 言わずもがな
+#ifndef VMO_NO_MAIN
 int main(void)
 {
     if (K > N)
@@ -5619,3 +5620,4 @@ int main(void)
 
     return 0;
 }
+#endif
