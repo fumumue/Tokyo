@@ -12,6 +12,8 @@
 // code name : OVP - One Variable Polynomial library with vecenMP friendly
 // status    : now in debugging (ver 0.9)
 
+// Target Tokyo
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
