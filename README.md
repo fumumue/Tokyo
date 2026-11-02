@@ -72,3 +72,28 @@ cmake --build build --parallel
 復号法の違いを比較しながら、有限体演算や多項式手法を調べるためのコードとして設計されています。
 
 このコードは研究・学習・アルゴリズム検証向けの試作です。実装の完成度や暗号学的安全性は保証されていません。実用の暗号システムや機密データの保護には使用しないでください。
+
+## 今回の生酛でも言えるコード。
+**BM用のシンドロームは、Goppa多項式の係数行列をかけることでパターソン用のシンドロームへと変換できる。**
+
+```c
+// synd() の vec.x に格納された通常順シンドロームを、g の係数から作る
+// 上三角 Toeplitz 行列で Patterson 用シンドロームに変換する。
+static q_res q_bm_to_patterson_syndrome(const short *syndrome)
+{
+    static short toeplitz[K][K];
+    for (int i = 0; i < K; i++)
+        for (int j = 0; j < K; j++)
+            toeplitz[i][j] = (j >= i) ? q_g[K + i - j] : 0;
+
+    q_res s = q_zero();
+    for (int i = 0; i < K; i++)
+    {
+        short acc = 0;
+        for (int j = i; j < K; j++)
+            acc = q_add(acc, q_mul(toeplitz[i][j], syndrome[K - 1 - j]));
+        s.c[i] = q_neg(acc);
+    }
+    return s;
+}
+```
