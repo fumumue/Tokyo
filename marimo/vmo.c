@@ -5612,7 +5612,10 @@ int main(void)
 
     int hit;
     patterson_check(zz, gc.x, 1, Pr - 1, &hit);   // 同じ zz・同じ g・同じ mat
+    for(int i=0;i<N;i++)
+    if(zz[i]!=0)
+    printf("%d,", i);
+    printf("\n");
 
-    
     return 0;
 }
