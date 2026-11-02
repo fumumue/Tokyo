@@ -488,3 +488,57 @@ void patterson_experiment(int wmin, int wmax, int ng, int trials, int maxval, in
     for (int w = wmin; w <= wmax; w++)
         printf(" %2d : %d / %d / %d / %d\n", w, okc[w], ambc[w], failc[w], skipc[w]);
 }
+
+// ---------- BM と同じ誤りベクトルでシンドロームを再計算して復号する ----------
+// zz[0..M-1] : 誤りベクトル (BM で使ったものと同じ。値は体の元)
+// 現在の mat (= 直近の vv(K) で作られた検査行列) から S[0..K-1] を計算する。printf なし。
+// 注意: vv(K) を呼び直すと mat と g が変わるので、その g (gcoef) と必ず組で使うこと。
+void patterson_synd(const short *zz, short *S)
+{
+    for (int j = 0; j < K; j++)
+    {
+        short acc = 0;
+        for (int i = 0; i < M; i++)
+            if (zz[i]>0)
+                acc = q_add(acc, q_mul(zz[i], mat[j][i]));
+        S[j] = acc;
+    }
+}
+
+// zz から S を作り直して Patterson 復号し、元の誤りと比較して表示する。
+// 戻り値: 候補数 (負なら復号不能)。候補のうち zz と完全一致するものがあれば *hit = 1。
+int patterson_check(const short *zz, const short *gcoef, int phimin, int phimax, int *hit)
+{
+    static short errs[Q_MAXC][M];
+    short S[K];
+    patterson_synd(zz, S);
+    int n = patterson_q(S, gcoef, phimin, phimax, errs);
+    if (hit)
+        *hit = 0;
+    printf("Patterson: 候補数=%d", n);
+    if (n == -1)
+        printf(" (g が無平方でない / s が可逆でない)\n");
+    else if (n == -2)
+        printf(" (s=0: 誤りなし)\n");
+    else
+        printf("\n");
+    if (n <= 0)
+        return n;
+
+    for (int c = 0; c < n; c++)
+    {
+        int mism = 0;
+        for (int i = 0; i < M; i++)
+            if (zz[i] != errs[c][i])
+                mism++;
+        printf("--- 候補 %d : %s (不一致位置 %d 個)\n", c, mism ? "MISMATCH" : "OK", mism);
+        printf("pos  original  decoded\n");
+        for (int i = 0; i < M; i++)
+            if (zz[i] || errs[c][i])
+                printf("%4d  %8d  %7d%s\n", i, zz[i], errs[c][i],
+                       zz[i] == errs[c][i] ? "" : "  <--");
+        if (!mism && hit)
+            *hit = 1;
+    }
+    return n;
+}

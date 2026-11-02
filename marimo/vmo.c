@@ -4133,13 +4133,15 @@ ymo bm_itr(short s[])
         printf(" ==chen00\n");
         return t;
     }
-    else
+    else if(deg(t.f)!=T)
     {
         t.f = U2[1][0][0];
         printsage((t.f));
         printf("baka\n");
-        exit(1);
-    }
+        return t;
+        //exit(1);
+    } 
+    
 }
 
 vec lag(vec v)
@@ -4777,6 +4779,95 @@ aa:
     //  bdet();
     return r;
 }
+
+void v4(int kk,vec r)
+{
+    int i, j;
+    //vec r; //= mkpol();
+    short tr[N];
+    short ta[N] = {0};
+
+    printf("van der\n");
+
+    for (int i = 0; i < kk; i++)
+    {
+        for (int j = 0; j < M; j++)
+        {
+            vb[i][j] = gf[mltn(i, fg[j])];
+            // printf("%d,", mltn(i, j));
+        }
+        printf("\n");
+    }
+
+    int l = -1;
+    vec pp = {0}, tt = {0};
+
+aa:
+    // exit(1);
+    while(l<0){
+    //r = mkpol();
+    l=ben_or(r);
+    }
+    // for( int i= 0; i < K; i++)
+    // pp.x[i] = rand() % N;
+    // mykey(r.x, pp);
+    // r.x[K] = 1;
+    // printsage(r);
+    // r=(tt);
+    for (int i = 0; i < M; i++)
+    {
+        ta[i] = eval(r, i);
+        if (ta[i] == 0)
+        {
+            printf("eval 0 @ %d\n", i);
+            // fail = 1;
+            goto aa;
+        }
+    }
+
+    for (int i = 0; i < M; i++)
+    {
+        tr[i] = oinv(ta[i]);
+        // printf("%d,", tr[i]);
+    }
+    printf("%d %d\n", r.x[0], r.x[K]);
+    // exit(1);
+    memset(pp.x, 0, sizeof(pp.x));
+    // for(int i=1;i<K+1;i++)
+    //     pp.x[i]=r.x[i];
+    ogt(r.x, K);
+    printf("\nすげ、オレもうイキそ・・・\n");
+    // keygen(g);
+    // exit(1);
+
+    for (int i = 0; i < M; i++)
+    {
+        for (int j = 0; j < K; j++)
+        {
+            ma[j][i] = gf[mlt(fg[vb[j][i]], tr[i])];
+        }
+    }
+
+    
+    // Patterson's Syndrome
+        for (int i = 0; i < K; i++)
+        {
+            for (int j = 0; j < M; j++)
+            {
+                for (int k = 0; k < K; k++)
+                {
+                    mat[i][j] = plus(mat[i][j], gf[mlt(fg[gt[k][i]],fg[ma[k][j]])]);
+                }
+                printf("c%d,", mat[i][j]);
+            }
+            printf("\n");
+        }
+    
+    // exit(1);
+    //  bdet();
+    //return r;
+}
+
 
 /* input: in0, in1 in GF((2^m)^t)*/
 /* output: out = in0*in1 */
@@ -5463,7 +5554,6 @@ int main(void)
 
     srand(clock());
     
-    mkerr(zz,T);
     printf("%d %d %d %d\n", sizeof(uni), sizeof(MTX), sizeof(CTX), sizeof(data));
     memset(mat, 0, sizeof(mat));
     srand(clock());
@@ -5509,13 +5599,18 @@ int main(void)
 
 
     //pk_gen();
-    vv(K);
-    vec s=synd(zz,K);
-    ymo y=bm_itr(s.x);
+    
+    vec gc = vv(K);                  // g と mat が決まる(この後は vv を呼ばない)
+    //short zz[M] = {0};               // ← zz[N] ではなく zz[M]
+    mkerr(zz, T);
+
+    vec s = synd(zz, K);             // BM 用
+    ymo y = bm_itr(s.x);
     chen(y.f);
-    for(int i=0;i<N;i++)
-    if(zz[i]>0)
-    printf("%d,%d\n",i,zz[i]);
+
+    int hit;
+    patterson_check(zz, gc.x, 1, Pr - 1, &hit);   // 同じ zz・同じ g・同じ mat
+
     
     return 0;
 }
