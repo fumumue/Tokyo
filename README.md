@@ -26,7 +26,7 @@
 | `bm_gf2m/` | GF(2^m)上でのBerlekamp–Massey法の実験。 |
 | `daikoku/` | Euclid法・Patterson法に近い復号の試作。 |
 | `gf2m-peter/` | Peterson風の符号復号器・試験コード。 |
-| `marimo/` | 多項式演算、有限体演算、Patterson法の検証を行う中心的な実験群。 |
+| `marimo/` | 拡大体上のパターソン復号アルゴリズム。 |
 | `marimo/bunka2/`, `marimo/gaal/` | `marimo` の別バージョンや派生実装。 |
 
 ルート直下にも、これらに関連する試作コードやヘッダがあります。ディレクトリ内のREADMEとMakefileを参照してください。符号パラメータは主に `global.h` または `global-p.h` で定義されています。
@@ -45,9 +45,9 @@ cmake --build build --parallel
 | CMakeターゲット | ソース |
 | --- | --- |
 | `tokyo` | `ymo.c` |
-| `bm_gf2m_lyon` | `bm_gf2m/lyon.c` |
+| `bm_gf2m_lyon` | `bm_gf2m/fat_old_sun.c` |
 | `daikoku_xeuclide` | `daikoku/Xeuclide.c` |
-| `gf2m_peter_ptar` | `gf2m-peter/p-tar.c` |
+| `gf2m_peter_ptar` | `gf2m-peter/origin.c` |
 | `marimo_vmo` | `marimo/vmo.c` |
 
 実行したいターゲットを個別に起動します。
