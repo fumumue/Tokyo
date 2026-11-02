@@ -33,6 +33,7 @@
 #include <math.h>
 //#include "omp.h"
 
+
 #include "global-p.h"
 #include "struct-p.h"
 
@@ -69,6 +70,8 @@ void printpol(vec a);
 ymo bm_itr(short s[]);
 short minus(short a);
 short xtrace(vec f, short x);
+
+#include "patterson_q.c"
 // #pragma omp threadprivate(mat)
 // シンドロームのコピー
 short sy[K] = {0};
