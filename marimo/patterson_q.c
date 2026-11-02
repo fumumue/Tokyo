@@ -215,6 +215,26 @@ static q_res q_root(q_res z)
     return r;
 }
 
+// synd() の vec.x に格納された通常順シンドロームを、g の係数から作る
+// 上三角 Toeplitz 行列で Patterson 用シンドロームに変換する。
+static q_res q_bm_to_patterson_syndrome(const short *syndrome)
+{
+    static short toeplitz[K][K];
+    for (int i = 0; i < K; i++)
+        for (int j = 0; j < K; j++)
+            toeplitz[i][j] = (j >= i) ? q_g[K + i - j] : 0;
+
+    q_res s = q_zero();
+    for (int i = 0; i < K; i++)
+    {
+        short acc = 0;
+        for (int j = i; j < K; j++)
+            acc = q_add(acc, q_mul(toeplitz[i][j], syndrome[K - 1 - j]));
+        s.c[i] = q_neg(acc);
+    }
+    return s;
+}
+
 // s の g を法とする逆元。s が可逆でなければ 0
 static int q_sinv(q_res s, q_res *out)
 {
@@ -242,28 +262,21 @@ static short q_eval(const short *c, int d, short x)
 }
 
 // ---------- 復号本体 ----------
-// S[j] = Σ e_i L_i^j / g(L_i)  (j = 0..K-1)。synd() が返す vec の x[j] と同じもの。
+// syndrome[j] = synd() が返す vec.x[j] (通常順シンドローム)。
 // gcoef[i] = g の x^i の係数 (i = 0..K)。
 // φ = phimin..phimax を試す。誤りの値が全部 1 なら phimin=phimax=1 でよい。
 // 戻り値: 見つかった候補数 (>=0)。-1: g が無平方でない/s が可逆でない、-2: s = 0 (誤りなし)。
 // errs[c][i] = 候補 c の位置 i (体の元 i) の誤りの値 (0 は誤りなし)。
-int patterson_q(const short *S, const short *gcoef, int phimin, int phimax, short errs[Q_MAXC][M])
+int patterson_q(const short *syndrome, const short *gcoef, int phimin, int phimax, short errs[Q_MAXC][M])
 {
     if (!q_setup(gcoef))
         return -1;
 
-    // Patterson 用のシンドローム s(x) = -Σ_i x^i Σ_{k>i} g_k S_{k-1-i}  (mod g)
-    q_res s = q_zero();
+    q_res s = q_bm_to_patterson_syndrome(syndrome);
     int nz = 0;
     for (int i = 0; i < K; i++)
-    {
-        short acc = 0;
-        for (int k = i + 1; k <= K; k++)
-            acc = q_add(acc, q_mul(q_g[k], S[k - 1 - i]));
-        s.c[i] = q_neg(acc);
         if (s.c[i])
             nz = 1;
-    }
     if (!nz)
         return -2;
     q_res sinv;
@@ -389,7 +402,7 @@ int patterson_q(const short *S, const short *gcoef, int phimin, int phimax, shor
         if (bad || total != f)
             continue;
 
-        // 検証: Σ e_i mat[j][i] == S[j]
+        // synd() の出力と同じ通常順で検証する。
         int okv = 1;
         for (int j = 0; j < K && okv; j++)
         {
@@ -397,7 +410,7 @@ int patterson_q(const short *S, const short *gcoef, int phimin, int phimax, shor
             for (int i = 0; i < M; i++)
                 if (e[i])
                     acc = q_add(acc, q_mul(e[i], mat[j][i]));
-            if (acc != S[j])
+            if (acc != syndrome[j])
                 okv = 0;
         }
         if (!okv)
@@ -484,37 +497,20 @@ void patterson_experiment(int wmin, int wmax, int ng, int trials, int maxval, in
 
     printf("\n==== 一般化 Patterson 復号 (Pr=%d, E=%d, K=%d, 誤りの値 1..%d, φ=1..%d) ====\n",
            Pr, E, K, maxval, phimax);
+            for(int j=0;j<N;j++)
+            printf("%d,",mat[i][j]);
+            printf("\n");
     printf("  w : 成功 / 曖昧 / 失敗 / スキップ\n");
     for (int w = wmin; w <= wmax; w++)
         printf(" %2d : %d / %d / %d / %d\n", w, okc[w], ambc[w], failc[w], skipc[w]);
 }
 
-// ---------- BM と同じ誤りベクトルでシンドロームを再計算して復号する ----------
-// zz[0..M-1] : 誤りベクトル (BM で使ったものと同じ。値は体の元)
-// 現在の mat (= 直近の vv(K) で作られた検査行列) から S[0..K-1] を計算する。printf なし。
-// 注意: vv(K) を呼び直すと mat と g が変わるので、その g (gcoef) と必ず組で使うこと。
-void patterson_synd(const short *zz, short *S)
-{
-    for (int j = 0; j < K; j++)
-    {
-        short acc = 0;
-        for (int i = 0; i < M; i++)
-            if (zz[i]>0)
-                acc = q_add(acc, q_mul(zz[i], mat[j][i]));
-        S[j] = acc;
-    }
-}
-
-// zz から S を作り直して Patterson 復号し、元の誤りと比較して表示する。
-// 戻り値: 候補数 (負なら復号不能)。候補のうち zz と完全一致するものがあれば *hit = 1。
-int patterson_check(const short *zz, const short *gcoef, int phimin, int phimax, int *hit)
+// synd() の出力と g の係数から Patterson 復号する。
+// 戻り値: 候補数 (負なら復号不能)。
+int patterson_check(const short *syndrome, const short *gcoef, int phimin, int phimax)
 {
     static short errs[Q_MAXC][M];
-    short S[K];
-    patterson_synd(zz, S);
-    int n = patterson_q(S, gcoef, phimin, phimax, errs);
-    if (hit)
-        *hit = 0;
+    int n = patterson_q(syndrome, gcoef, phimin, phimax, errs);
     printf("Patterson: 候補数=%d", n);
     if (n == -1)
         printf(" (g が無平方でない / s が可逆でない)\n");
@@ -527,18 +523,11 @@ int patterson_check(const short *zz, const short *gcoef, int phimin, int phimax,
 
     for (int c = 0; c < n; c++)
     {
-        int mism = 0;
+        printf("--- 候補 %d\n", c);
+        printf("pos  decoded\n");
         for (int i = 0; i < M; i++)
-            if (zz[i] != errs[c][i])
-                mism++;
-        printf("--- 候補 %d : %s (不一致位置 %d 個)\n", c, mism ? "MISMATCH" : "OK", mism);
-        printf("pos  original  decoded\n");
-        for (int i = 0; i < M; i++)
-            if (zz[i] || errs[c][i])
-                printf("i= %4d  %8d  %7d%s\n", i, zz[i], errs[c][i],
-                       zz[i] == errs[c][i] ? "" : "  <--");
-        if (!mism && hit)
-            *hit = 1;
+            if (errs[c][i])
+                printf("i= %4d  %7d\n", i, errs[c][i]);
     }
     return n;
 }

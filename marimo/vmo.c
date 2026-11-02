@@ -5610,8 +5610,7 @@ int main(void)
     ymo y = bm_itr(s.x);
     chen(y.f);
 
-    int hit;
-    patterson_check(zz, gc.x, 1, Pr - 1, &hit);   // 同じ zz・同じ g・同じ mat
+    patterson_check(s.x, gc.x, 1, Pr - 1);        // synd() の出力と同じ g を渡す
     for(int i=0;i<N;i++)
     if(zz[i]!=0)
     printf("%d,", i);
