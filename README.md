@@ -59,6 +59,29 @@ cmake --build build --parallel
 `daikoku_xeuclide` と `marimo_vmo` はAVX2向けビルドを含みます。
 そのため、実行環境のCPUがAVX2対応であることが必要です。
 
+## Niederreiter型デモ
+
+`marimo/niederreiter_demo.c` はBM/Patterson実装を使った往復確認用デモです。
+リポジトリのルートから次のようにビルド・実行します。
+
+```sh
+make -C marimo niederreiter_demo
+./marimo/niederreiter_demo [誤り重み] [raw]
+```
+
+誤り重みは `1` から `K` の範囲で指定します。省略時は `K`（現在の設定では16）です。
+通常はランダムな行変換と列置換を行います。第2引数に `raw` を指定すると両方を無効にし、
+スクランブル前の行列で比較します。`raw` を使う場合も誤り重みを第1引数に置いてください。
+
+```sh
+./marimo/niederreiter_demo 1       # 誤り重み1、スクランブルあり
+./marimo/niederreiter_demo 1 raw   # 誤り重み1、スクランブルなし
+./marimo/niederreiter_demo 16 raw  # 既定の誤り重みでスクランブルなし
+```
+
+`raw` だけを第1引数にすると誤り重みとして解釈され、引数エラーになります。
+このデモの詳細と出力の読み方は `marimo/README.md` を参照してください。
+
 ## 注意事項
 
 - このコードは研究・検証・学習用途の実験コードです。
