@@ -497,9 +497,6 @@ void patterson_experiment(int wmin, int wmax, int ng, int trials, int maxval, in
 
     printf("\n==== 一般化 Patterson 復号 (Pr=%d, E=%d, K=%d, 誤りの値 1..%d, φ=1..%d) ====\n",
            Pr, E, K, maxval, phimax);
-            for(int j=0;j<N;j++)
-            printf("%d,",mat[i][j]);
-            printf("\n");
     printf("  w : 成功 / 曖昧 / 失敗 / スキップ\n");
     for (int w = wmin; w <= wmax; w++)
         printf(" %2d : %d / %d / %d / %d\n", w, okc[w], ambc[w], failc[w], skipc[w]);
