@@ -5611,6 +5611,11 @@ int main(void)
     chen(y.f);
 
     patterson_check(s.x, gc.x, 1, Pr - 1);        // synd() の出力と同じ g を渡す
+    printf("\n\ncheck done\n");
+    for(int i=0;i<K;i++)
+    printf("%d,",s.x[i]);
+    printf("\n");
+
     for(int i=0;i<N;i++)
     if(zz[i]!=0)
     printf("%d,", i);

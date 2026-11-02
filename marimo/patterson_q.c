@@ -526,5 +526,8 @@ int patterson_check(const short *syndrome, const short *gcoef, int phimin, int p
             if (errs[c][i])
                 printf("i= %4d  %7d\n", i, errs[c][i]);
     }
+    for(int i=0;i<K;i++)
+    printf("syn[%d]=%d\n", i, syndrome[i]);
+
     return n;
 }
