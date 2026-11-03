@@ -367,7 +367,7 @@ trace(OP f, unsigned short x)
     return u;
 }
 
-void vv(int kk)
+vec vv(int kk)
 {
     int i, j, k;
     OP r; // = mkpol();
@@ -438,6 +438,8 @@ aa:
             printf("%d,", mat[j][i]);
         printf("\n");
     }
+
+    return o2v(r);
 }
 
 // Patterson & EEA 用（ランダム多項式、次元指定）
@@ -882,6 +884,35 @@ vec bm_itr(unsigned short s[])
     return t.f;
 }
 
+static void doubled_syndrome(
+    const unsigned short *s,
+    const unsigned short *alpha,
+    unsigned short *S, vec x)
+    
+{
+    for (int j = 0; j < 2 * T; j++)
+        S[j] = 0;
+
+    /*
+     * v = (s | 0)
+     * Here s is a binary vector of length N.
+     */
+    for (int i = 0; i < N; i++) {
+        if (s[i] != 1)
+            continue;
+
+        unsigned short gx = trace(v2o(x),alpha[i]);
+        unsigned short weight = oinv(mlt(gx, gx));
+
+        unsigned short power = 1;
+
+        for (int j = 0; j < 2 * T; j++) {
+            S[j] ^= mlt(power, weight);
+            power = mlt(power, alpha[i]);
+        }
+    }
+}
+
 
 int main()
 {
@@ -893,13 +924,14 @@ int main()
     srand(clock());
     // mkg(K);
     // van(K);          // RS-Code generate
-    vv(K);
+    x=vv(K);
     while(1){
     for(i=0;i<T;i++)
     z1[i]=1;
     //mkerr(z1, T);    // generate error vector
 
     f = synd(z1, K); // calc syndrome
+    doubled_syndrome(o2v(f).x, gf, v.x, x);
     x = o2v(f);      // transorm to vec
     //v = bma(x.x);    // Berlekamp-Massey Algorithm
     //v=bm_itr(x.x);
