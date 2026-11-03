@@ -1,6 +1,14 @@
 // Experimental Niederreiter-style round trip using the existing BM/Patterson code.
 // This is a correctness experiment, not production cryptography: rand() is not
 // cryptographically secure, and this demo does not encode arbitrary messages.
+//
+// Changes from the previous version:
+//   1. bm_decode_errors() reads the syndrome in the same order as
+//      q_bm_to_patterson_syndrome(): T_n = syn[K-1-n].
+//   2. The locator roots are evaluated with the reversed Horner loop, so a root
+//      is the error position alpha_j itself (not 1/alpha_j).
+//   3. Table headings renamed ("BM error" was the injected error, not BM's output),
+//      and a BM hit / false-positive summary line was added.
 #define VMO_NO_MAIN
 #include "vmo.c"
 
@@ -132,8 +140,14 @@ static void print_syndrome(const char *label, const short *syndrome)
     printf("\n");
 }
 
-static int bm_decode_errors(const short *syndrome, short decoded[M], int *locator_degree)
+// syn is stored in reverse order: T_n = syn[K-1-n] (n = 0..K-1),
+// the same convention as q_bm_to_patterson_syndrome().
+static int bm_decode_errors(const short *syn, short decoded[M], int *locator_degree)
 {
+    short syndrome[K];
+    for (int n = 0; n < K; n++)
+        syndrome[n] = syn[K - 1 - n];
+
     short locator[K + 1] = {1}, previous[K + 1] = {1};
     memset(decoded, 0, sizeof(short) * M);
     int degree = 0, shift = 1;
@@ -175,8 +189,9 @@ static int bm_decode_errors(const short *syndrome, short decoded[M], int *locato
     int roots = 0;
     for (int position = 0; position < M; position++)
     {
+        // Reversed Horner: x^d + c_1 x^(d-1) + ... + c_d, whose roots are alpha_j.
         short value = 0;
-        for (int i = degree; i >= 0; i--)
+        for (int i = 0; i <= degree; i++)
             value = q_add(q_mul(value, (short)position), locator[i]);
         if (value == 0)
         {
@@ -293,27 +308,37 @@ int main(int argc, char **argv)
         if (sum != bm_syndrome[K - 1 - row])
             bm_syndrome_matches = 0;
     }
+    int bm_hits = 0, bm_false = 0;
     for (int col = 0; col < M; col++)
-        if (bm_decoded[permutation[col]] != error[col])
+    {
+        short found = bm_decoded[permutation[col]];
+        if (found != error[col])
             bm_recovered = 0;
+        if (found && error[col])
+            bm_hits++;
+        else if (found && !error[col])
+            bm_false++;
+    }
 
     printf("\nBM decoder locator degree: %d (unique-decoding limit K/2=%d)\n",
            bm_locator_degree, K / 2);
     printf("BM locator roots (not necessarily valid errors): %d\n", bm_roots);
+    printf("BM hits: %d / %d injected errors, false positives: %d\n",
+           bm_hits, weight, bm_false);
     printf("BM decoded support matches syndrome: %s\n",
            bm_syndrome_matches ? "yes" : "no");
     printf("BM original error recovered: %s\n", bm_recovered ? "yes" : "no");
 
     int candidates = patterson_q(bm_syndrome, (const short *)g.x, 1, Pr - 1, decoded);
     int recovered = 0;
-    printf("\n| BM column | BM error | BM locator root | Pat location | Pat decoded |\n");
-    printf("|-----------:|---------:|---------------:|-------------:|------------:|\n");
+    printf("\n| column | injected | BM found | Pat position | Pat found |\n");
+    printf("|-------:|---------:|---------:|-------------:|----------:|\n");
     if (candidates == 0)
     {
         for (int j = 0; j < M; j++)
             if (error[j])
-                printf("| %9d | %8d | %14d | %12d | %11s |\n",
-                       j, error[j], bm_decoded[permutation[j]], permutation[j], "なし");
+                printf("| %6d | %8d | %8d | %12d | %9s |\n",
+                       j, error[j], bm_decoded[permutation[j]], permutation[j], "none");
     }
     for (int c = 0; c < candidates; c++)
     {
@@ -330,7 +355,7 @@ int main(int argc, char **argv)
         {
             short decoded_value = decoded[c][permutation[j]];
             if (error[j] || bm_decoded[permutation[j]] || decoded_value)
-                printf("| %9d | %8d | %14d | %12d | %11d |%s\n",
+                printf("| %6d | %8d | %8d | %12d | %9d |%s\n",
                        j, error[j], bm_decoded[permutation[j]], permutation[j], decoded_value,
                        error[j] == decoded_value ? "" : " mismatch");
         }
