@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/marimo_vmo.dir/link.d"
   "CMakeFiles/marimo_vmo.dir/marimo/vmo.c.o"
   "CMakeFiles/marimo_vmo.dir/marimo/vmo.c.o.d"
   "marimo_vmo"

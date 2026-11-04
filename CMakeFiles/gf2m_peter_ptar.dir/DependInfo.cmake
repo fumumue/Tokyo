@@ -8,7 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/workspaces/Tokyo/gf2m-peter/p-tar.c" "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o" "gcc" "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o.d"
+  "/home/test/Tokyo/gf2m-peter/p-tar.c" "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o" "gcc" "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o.d"
+  "" "gf2m_peter_ptar" "gcc" "CMakeFiles/gf2m_peter_ptar.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

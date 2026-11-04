@@ -8,7 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/workspaces/Tokyo/daikoku/Xeuclide.c" "CMakeFiles/daikoku_xeuclide.dir/daikoku/Xeuclide.c.o" "gcc" "CMakeFiles/daikoku_xeuclide.dir/daikoku/Xeuclide.c.o.d"
+  "/home/test/Tokyo/daikoku/Xeuclide.c" "CMakeFiles/daikoku_xeuclide.dir/daikoku/Xeuclide.c.o" "gcc" "CMakeFiles/daikoku_xeuclide.dir/daikoku/Xeuclide.c.o.d"
+  "" "daikoku_xeuclide" "gcc" "CMakeFiles/daikoku_xeuclide.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

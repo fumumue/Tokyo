@@ -1,4 +1,5 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/tokyo.dir/link.d"
   "CMakeFiles/tokyo.dir/ymo.c.o"
   "CMakeFiles/tokyo.dir/ymo.c.o.d"
   "tokyo"

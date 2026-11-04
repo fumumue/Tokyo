@@ -8,7 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/workspaces/Tokyo/ymo.c" "CMakeFiles/tokyo.dir/ymo.c.o" "gcc" "CMakeFiles/tokyo.dir/ymo.c.o.d"
+  "/home/test/Tokyo/ymo.c" "CMakeFiles/tokyo.dir/ymo.c.o" "gcc" "CMakeFiles/tokyo.dir/ymo.c.o.d"
+  "" "tokyo" "gcc" "CMakeFiles/tokyo.dir/link.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
