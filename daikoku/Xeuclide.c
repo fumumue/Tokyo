@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <execinfo.h>
+#include <omp.h>
 
 #include "8192.h"
 //#include "4096.h"
@@ -141,6 +142,37 @@ OP conv(OP f)
 
   return g;
 }
+
+//項の数
+int terms(OP f)
+{
+  int i, count = 0;
+
+  for (i = 0; i < DEG; i++)
+    if (f.t[i].a > 0)
+      count++;
+
+  return count;
+}
+
+//多項式の次数(degのOP型)
+int odeg(OP f)
+{
+  int i, j = 0, k;
+
+  if (f.t[0].a == 0)
+    return 0;
+
+  //k=terms(f);
+  for (i = 0; i < DEG; i++)
+  {
+    if (j < f.t[i].n && f.t[i].a > 0)
+      j = f.t[i].n;
+  }
+
+  return j;
+}
+
 
 //多項式を表示する（OP型）
 void oprintpol(OP f)
@@ -517,6 +549,28 @@ OP coeff(OP f, unsigned short d)
 
   return f;
 }
+
+
+//多項式の次数(default)
+int deg(vec a)
+{
+  int i, n = 0, flg = 0;
+
+  //#pragma omp parallel for
+  for (i = 0; i < DEG; i++)
+  {
+    if (a.x[i] > 0)
+    {
+      n = i;
+      flg = 1;
+    }
+  }
+  if (flg == 0)
+    return 0;
+
+  return n;
+}
+
 
 //多項式を表示する(default)
 void printpol(vec a)
@@ -1257,35 +1311,6 @@ int distance(OP f)
   return j;
 }
 
-//項の数
-int terms(OP f)
-{
-  int i, count = 0;
-
-  for (i = 0; i < DEG; i++)
-    if (f.t[i].a > 0)
-      count++;
-
-  return count;
-}
-
-//多項式の次数(degのOP型)
-int odeg(OP f)
-{
-  int i, j = 0, k;
-
-  if (f.t[0].a == 0)
-    return 0;
-
-  //k=terms(f);
-  for (i = 0; i < DEG; i++)
-  {
-    if (j < f.t[i].n && f.t[i].a > 0)
-      j = f.t[i].n;
-  }
-
-  return j;
-}
 
 //０多項式かどうかのチェック
 unsigned char
@@ -1523,26 +1548,6 @@ b2B(unsigned short b[E])
     a ^= (b[E - i - 1] << i);
 
   return a;
-}
-
-//多項式の次数(default)
-int deg(vec a)
-{
-  int i, n = 0, flg = 0;
-
-  //#pragma omp parallel for
-  for (i = 0; i < DEG; i++)
-  {
-    if (a.x[i] > 0)
-    {
-      n = i;
-      flg = 1;
-    }
-  }
-  if (flg == 0)
-    return 0;
-
-  return n;
 }
 
 //整数からベクトル型への変換
@@ -2767,6 +2772,51 @@ void encrypt(char buf[], unsigned char sk[64])
   fclose(fp);
 }
 
+
+int elo2(OP r)
+{
+  int count, i, j, k;
+
+  count = 0;
+
+  unsigned char x[N] = {0}, yy[N] = {0};
+  for (i = 0; i < T; i++)
+  {
+
+    if (i > 0 && r.t[i].n == 0)
+    {
+      printf("err baka-z\n");
+      //return -1;
+      exit(1);
+    }
+
+    if (r.t[i].a > 0 && i > 0) // == r.t[i].n)
+    {
+      x[r.t[i].n] = r.t[i].a;
+      //printf("err=%d %d %s\n", r.t[i].a, r.t[i].n, "お");
+      count++;
+    }
+    if (i == 0)
+    {
+      x[r.t[i].n] = r.t[i].a;
+      //printf("\nerr=%d %d %s\n", r.t[i].a, r.t[i].n, "う");
+      count++;
+    }
+    //zz[r.t[i].n]=r.t[i].a;
+  }
+
+  for (i = 0; i < N; i++)
+    yy[i] = x[P[i]];
+  for (i = 0; i < N; i++)
+  {
+    if (yy[i] > 0)
+      printf("err= %d\n", i);
+  }
+
+  return count;
+}
+
+
 void decrypt(OP w)
 {
   FILE *fp;
@@ -3431,7 +3481,7 @@ for(i=0;i<(K)*E;i++){
   for(j=0;j<(K)*E;j++)
   S.x[i][j]=xor128()%2;
 }
-}while(is_reg(S,inv_S.x) == -1);
+}while(is_reg(S,&inv_S) == -1);
 
   fp = fopen("inv_S.key", "wb");
 
@@ -3589,48 +3639,6 @@ int elo(OP r)
   return count;
 }
 
-int elo2(OP r)
-{
-  int count, i, j, k;
-
-  count = 0;
-
-  unsigned char x[N] = {0}, yy[N] = {0};
-  for (i = 0; i < T; i++)
-  {
-
-    if (i > 0 && r.t[i].n == 0)
-    {
-      printf("err baka-z\n");
-      //return -1;
-      exit(1);
-    }
-
-    if (r.t[i].a > 0 && i > 0) // == r.t[i].n)
-    {
-      x[r.t[i].n] = r.t[i].a;
-      //printf("err=%d %d %s\n", r.t[i].a, r.t[i].n, "お");
-      count++;
-    }
-    if (i == 0)
-    {
-      x[r.t[i].n] = r.t[i].a;
-      //printf("\nerr=%d %d %s\n", r.t[i].a, r.t[i].n, "う");
-      count++;
-    }
-    //zz[r.t[i].n]=r.t[i].a;
-  }
-
-  for (i = 0; i < N; i++)
-    yy[i] = x[P[i]];
-  for (i = 0; i < N; i++)
-  {
-    if (yy[i] > 0)
-      printf("err= %d\n", i);
-  }
-
-  return count;
-}
 
 int ero(vec v)
 {
