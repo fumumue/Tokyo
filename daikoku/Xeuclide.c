@@ -2733,7 +2733,7 @@ vec patterson(OP w, OP f)
 void encrypt(char buf[], unsigned char sk[64])
 {
   const uint8_t *hash = {0};
-  sha3_context c = {0};
+  sha3_ctx c = {0};
   int image_size = 512, i;
   FILE *fp;
   //  unsigned short dd=0;
@@ -2747,9 +2747,9 @@ void encrypt(char buf[], unsigned char sk[64])
   //exit(1);
 
   //scanf("%s",buf);
-  sha3_Init256(&c);
-  sha3_Update(&c, (char *)buf, strlen(buf));
-  hash = sha3_Finalize(&c);
+  sha3_init(&c, SHA3_256);
+  sha3_update(&c, (char *)buf, strlen(buf));
+  sha3_finalize(&c, hash);
 
   //j=0;
 
@@ -2828,7 +2828,7 @@ void decrypt(OP w)
   OP f = {0}, r = {0};
   vec v = {0};
   const uint8_t *hash = {0};
-  sha3_context c = {0};
+  sha3_ctx c = {0};
   int image_size = 512;
 
   j = 0;
@@ -2887,9 +2887,9 @@ void decrypt(OP w)
     printf("%u,", sk[i]);
   printf("\n");
 
-  sha3_Init256(&c);
-  sha3_Update(&c, (char *)buf0, strlen(buf0));
-  hash = sha3_Finalize(&c);
+  sha3_init(&c, SHA3_256);
+  sha3_update(&c, (char *)buf0, strlen(buf0));
+  sha3_finalize(&c, hash);
 
   j = 0;
   printf("hash=");
@@ -2948,7 +2948,7 @@ void test(OP w, unsigned short zz[])
   int i;
   vec v = {0};
   const uint8_t *hash;
-  sha3_context c;
+  sha3_ctx c;
   //int image_size=512;
   OP f = {0}, r = {0};
   FILE *fp;
@@ -3008,9 +3008,9 @@ void test(OP w, unsigned short zz[])
   encrypt(buf, sk);
   decrypt(w);
 
-  sha3_Init256(&c);
-  sha3_Update(&c, (char *)buf, strlen(buf));
-  hash = sha3_Finalize(&c);
+  sha3_init(&c, SHA3_256);
+  sha3_update(&c, (char *)buf, strlen(buf));
+  sha3_finalize(&c, hash);
 }
 
 void readkey()
