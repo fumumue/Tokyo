@@ -1,1 +1,0 @@
-/usr/bin/cc -Wl,--dependency-file=CMakeFiles/tokyo.dir/link.d CMakeFiles/tokyo.dir/ymo.c.o -o tokyo

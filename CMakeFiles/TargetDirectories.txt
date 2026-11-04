@@ -1,7 +1,0 @@
-/home/test/Tokyo/CMakeFiles/tokyo.dir
-/home/test/Tokyo/CMakeFiles/bm_gf2m_lyon.dir
-/home/test/Tokyo/CMakeFiles/daikoku_xeuclide.dir
-/home/test/Tokyo/CMakeFiles/gf2m_peter_ptar.dir
-/home/test/Tokyo/CMakeFiles/marimo_vmo.dir
-/home/test/Tokyo/CMakeFiles/edit_cache.dir
-/home/test/Tokyo/CMakeFiles/rebuild_cache.dir

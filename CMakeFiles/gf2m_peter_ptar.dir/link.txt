@@ -1,1 +1,0 @@
-/usr/bin/cc -Wl,--dependency-file=CMakeFiles/gf2m_peter_ptar.dir/link.d "CMakeFiles/gf2m_peter_ptar.dir/gf2m-peter/p-tar.c.o" -o gf2m_peter_ptar

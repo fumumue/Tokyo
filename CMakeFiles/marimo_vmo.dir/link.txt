@@ -1,1 +1,0 @@
-/usr/bin/cc -Wl,--dependency-file=CMakeFiles/marimo_vmo.dir/link.d CMakeFiles/marimo_vmo.dir/marimo/vmo.c.o -o marimo_vmo
