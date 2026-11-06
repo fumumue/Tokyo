@@ -932,7 +932,7 @@ int main()
 
     f = synd(z1, K); // calc syndrome
     doubled_syndrome(o2v(f).x, gf, v.x, x);
-    x = o2v(f);      // transorm to vec
+    //x = o2v(f);      // transorm to vec
     //v = bma(x.x);    // Berlekamp-Massey Algorithm
     //v=bm_itr(x.x);
     
@@ -940,7 +940,8 @@ int main()
     for (i = 0; i < K; i++)
         s[i + 1] = x.x[i];
     v = bms(s, K + 1);
-    
+    exit(1);
+
     printf("the errors below\n");
     for (i = 0; i < N; i++)
     {

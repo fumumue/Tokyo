@@ -405,7 +405,7 @@ int deg(vec a)
   int i, n = 0, flg = 0;
 
   // #pragma omp parallel for
-  for (i = 0; i < DEG; i++)
+  for (i = DEG - 1; i >= 0; i--)
   {
     if (a.x[i] > 0)
     {
@@ -523,13 +523,14 @@ oterm vLT(vec f)
   oterm t = {0};
 
   // k = deg (o2v (f));
-  for (i = 0; i < DEG; i++)
+  for (i = DEG-1; i >= 0; i--)
   {
     // printf("a=%d %d\n",f.t[i].a,f.t[i].n);
     if (f.x[i] > 0)
     {
       t.n = i;
       t.a = f.x[i];
+      break;
     }
   }
 
@@ -961,7 +962,7 @@ vec vmod(vec f, vec g)
     c = vLTdiv(f, b);
     h = vterml(g, c);
     f = vadd(f, h);
-    if (deg((f)) == 0 || deg((g)) == 0)
+    if (deg((f)) < deg((g)))
     {
       break;
     }
@@ -972,6 +973,44 @@ vec vmod(vec f, vec g)
   // printf("vmod-baka== %d %d\n",deg(f),deg(g));
   return f;
 }
+
+// 多項式の剰余を取る
+vec vdiv(vec f, vec g)
+{
+  vec h = {0},ff={0};
+  oterm b = {0}, c = {0};
+
+  vm++;
+  // printf("vmod-bl=%d k=%d\n",deg(f),deg(g));
+  if (vLT(f).n < vLT(g).n)
+  {
+    //    exit(1);
+    return f;
+  }
+
+  b = vLT(g);
+
+  // printpol(f);
+  // printf(" ==f\n");
+  while (1)
+  {
+
+    c = vLTdiv(f, b);
+    ff.x[c.n] = c.a;
+    h = vterml(g, c);
+    f = vadd(f, h);
+    if (deg((f)) < deg((g)))
+    {
+      break;
+    }
+
+    if (c.n == 0)
+      break;
+  }
+  // printf("vmod-baka== %d %d\n",deg(f),deg(g));
+  return ff;
+}
+
 
 vec vcoef(vec v)
 {
