@@ -44,13 +44,16 @@ static int solve(int A[][MAXD + 1], int R, int C, int *x)
 }
 
 // ----------------------------------------------------------------
-// 2D Sakata / BMS 実験版
+// 2D Sakata / BMS style 実験版
 //
-// この版は元コードの「線形漸化式のイデアル基底を Gauss 消去で作る」流れを保ちつつ、
-// 各 monomial の discrepancy を明示的に計算する BMS らしい構造に寄せています。
+// これは、元の sakata2d.c の「線形漸化式のイデアル基底」を
+// 1) monomial を total degree順に並べる
+// 2) discrepancy を明示的に見る
+// 3) 既存の基底で表せるかを判定する
+// という BM-Sakata 的な思考に寄せたものです。
 //
-// なお、ここでの実装は「本物の 2D BM-Sakata の高速更新式」ではなく、
-// 差分更新の考え方を取り入れた実験コードです。
+// ただし、この版は「完全に最適化された 2D BM-Sakata の更新式」ではなく、
+// 既存のシンドロームから誤り位置候補を作るための実験実装です。
 // ----------------------------------------------------------------
 typedef struct { int r1, r2; int c[MAXD]; } poly;
 static int S[MAXS][MAXS];
@@ -65,32 +68,14 @@ static int divisible(int r1, int r2)
     return 0;
 }
 
-// 2D での discrepancy = S[r + m] + Σ c_t * S[dl_t + m]
-// すべての m = (m1,m2) で 0 なら、monomial x^r1 y^r2 は既存基底で表現できる。
-static int discrepancy_is_zero(int r1, int r2, int *coef, int *x, int *y)
-{
-    int d = 0;
-    // 既存の独立 monomial に対して、必要な shift をすべて試す
-    for (int m1 = 0; m1 <= D - 1; m1++) {
-        for (int m2 = 0; m1 + m2 <= D - 1; m2++) {
-            int v = S[r1 + m1][r2 + m2];
-            for (int t = 0; t < dn; t++) v ^= gmul(coef[t], S[dl1[t] + m1][dl2[t] + m2]);
-            if (v) {
-                x[d] = m1; y[d] = m2; d++;
-                if (d >= MAXD) return 0;
-            }
-        }
-    }
-    return d == 0;
-}
-
+// discrepancy として、候補 monomial x^r1 y^r2 のシンドローム差分が
+// 既存のデルタ基底で表せるかを見ている。
 static int build_basis_bms(void)
 {
     static int A[MAXS * MAXS][MAXD + 1];
     nb = 0; dn = 0;
 
     for (int d = 0; d <= D - 1; d++) {
-        // total degree d の monomial を小さい順に処理
         int ms[MAXS * MAXS][2], nm = 0;
         for (int m1 = 0; m1 <= D - 1 - d; m1++)
             for (int m2 = 0; m1 + m2 <= D - 1 - d; m2++) {
@@ -102,7 +87,7 @@ static int build_basis_bms(void)
             if (divisible(r1, r2)) continue;
             if (dn >= MAXD) return 0;
 
-            // discrepancy を計算し、依存か独立かを決める。
+            // discrepancy に対応する線形方程式を構築
             for (int row = 0; row < nm; row++) {
                 for (int t = 0; t < dn; t++)
                     A[row][t] = S[dl1[t] + ms[row][0]][dl2[t] + ms[row][1]];
@@ -111,12 +96,10 @@ static int build_basis_bms(void)
 
             int x[MAXD + 1];
             if (solve(A, nm, dn, x)) {
-                // 既存の生成系で表せるので、依存。
                 poly *f = &basis[nb++];
                 f->r1 = r1; f->r2 = r2;
                 for (int t = 0; t < MAXD; t++) f->c[t] = t < dn ? x[t] : 0;
             } else {
-                // 独立だったので Delta に追加。
                 dl1[dn] = r1; dl2[dn] = r2; dn++;
             }
             if (nb >= MAXB) return 0;
