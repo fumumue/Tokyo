@@ -44,15 +44,16 @@ static int solve(int A[][MAXD + 1], int R, int C, int *x)
 }
 
 // ----------------------------------------------------------------
-// 2D Sakata / BMS風の誤り位置イデアル作成
+// 2次元 Sakata/BMS 風の誤り位置イデアル作成
 //
-// 元の sakata2d.c は、各単項式 r に対して「二次元線形漸化式が成り立つか」を
-// ガウス消去で判定していました。これは BMS の考え方を使った実験版で、
-// 発散を避けるために、各候補 monomial に対して discrepancy を調べ、
-// 依存/独立を判定する構造に合わせて整理したものです。
+// これは、元の sakata2d.c を「BMS 風」に整理した実験版です。
+// つまり、理論的には BM-Sakata に近い差分更新の視点を使いつつ、
+// 既存の線形漸化式判定を簡潔に保つために、依存判定を Gauss 消去で行います。
 //
-// 実際には、最終的な候補母関数の生成・零点探索・値の解決までは同じ流れを使い、
-// ここだけを BMS 風の更新式に寄せています。
+// 完全な最適化版の BM-Sakata では、線形系を毎回全体解くのではなく、
+// discrepancy の更新を逐次適用して O(n^2) 近似で進めます。
+// ここでは、実験コードとして「BMS の考え方」を反映しつつ、
+// 既存のデコード・検証フレームワークを壊さないようにしています。
 // ----------------------------------------------------------------
 typedef struct { int r1, r2; int c[MAXD]; } poly;
 static int S[MAXS][MAXS];
@@ -67,17 +68,9 @@ static int divisible(int r1, int r2)
     return 0;
 }
 
-static int monomial_order_lt(int a1, int a2, int b1, int b2)
-{
-    int da = a1 + a2, db = b1 + b2;
-    if (da != db) return da < db;
-    if (a1 != b1) return a1 < b1;
-    return a2 < b2;
-}
-
-// BMS風の discrepancy 判定で、候補 monomial が既存基底に依存するかを判定する。
-// ここでは、元の実装と同じ線形方程式の整合判定を使うことで、実装の簡潔さを保ちつつ
-// BMS の更新と同じ「候補を順番に見て、独立なら Delta に追加」という流れを再現する。
+// 2D Sakata 風の基底構築。
+// ここでの列挙順は、単項式を total degree で昇順に並べ、同一 degree では
+// x^r y^(d-r) の順に処理する。
 static int build_basis_bms(void)
 {
     static int A[MAXS * MAXS][MAXD + 1];
@@ -90,13 +83,11 @@ static int build_basis_bms(void)
                 ms[nm][0] = m1; ms[nm][1] = m2; nm++;
             }
 
-        // degree d の monomial を小さい順に処理
         for (int i = d; i >= 0; i--) {
             int r1 = i, r2 = d - i;
             if (divisible(r1, r2)) continue;
             if (dn >= MAXD) return 0;
 
-            // BMS の「discrepancy」を、線形系として評価する
             for (int row = 0; row < nm; row++) {
                 for (int t = 0; t < dn; t++)
                     A[row][t] = S[dl1[t] + ms[row][0]][dl2[t] + ms[row][1]];
@@ -105,12 +96,10 @@ static int build_basis_bms(void)
 
             int x[MAXD + 1];
             if (solve(A, nm, dn, x)) {
-                // 依存: 既存の準同型の線形結合として表せる。ここで BMS 風に更新を行う。
                 poly *f = &basis[nb++];
                 f->r1 = r1; f->r2 = r2;
                 for (int t = 0; t < MAXD; t++) f->c[t] = t < dn ? x[t] : 0;
             } else {
-                // 独立: BMS でいう「新しい discrepancy を持つ monomial」
                 dl1[dn] = r1; dl2[dn] = r2; dn++;
             }
             if (nb >= MAXB) return 0;
