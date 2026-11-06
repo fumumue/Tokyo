@@ -4,8 +4,8 @@
 //monomial
 typedef struct
 {
-   unsigned short n; //単項式の次数
-   unsigned short a; //単項式の係数
+  unsigned short n; //単項式の次数
+  unsigned short a; //単項式の係数
 } oterm;
 
 //polynomial
@@ -16,7 +16,7 @@ typedef struct
 
 typedef struct 
 {
-   unsigned short x[DEG]; //配列の添字を次数に、配列の値を係数に持つ多項式の表現
+  unsigned short x[8192]; //配列の添字を次数に、配列の値を係数に持つ多項式の表現
 } vec;
 
 typedef struct {
@@ -26,7 +26,7 @@ typedef struct {
 
 typedef struct
 {
-   short v[N];
+  unsigned short v[N];
   int f;
 } MT;
 
@@ -40,68 +40,68 @@ typedef struct
 
 typedef union
 { //test(SIMN)
-   long long int u[K/4];
-   short s[K];
+  unsigned long long int u[K/4];
+  unsigned short s[K];
 } SU;
 
 typedef union
 {
   __uint128_t z[K/16];
-   long long int u[K/8];
-   int t[K/4];
-   short x[K/2];
-   char d[K];
+  unsigned long long int u[K/8];
+  unsigned int t[K/4];
+  unsigned short x[K/2];
+  unsigned char d[K];
 } arrayul;
 
 typedef union
 {
-   long long int u[N];
-   char d[N * 8];
+  unsigned long long int u[N];
+  unsigned char d[N * 8];
 } arrayull;
 
 typedef union a4
 {
-   char ar[4];
-   int n;
+  unsigned char ar[4];
+  unsigned int n;
 } array;
 
 typedef struct a8
 {
-   char ar[8];
+  unsigned char ar[8];
 } array8;
 
 typedef union
 {
-   int h[16];
-   char c[64];
+  unsigned int h[16];
+  unsigned char c[64];
 } array16;
 
 typedef union aN
 {
-   int d[64];
-   long long int u[32];
-   char ar[256];
+  unsigned int d[64];
+  unsigned long long int u[32];
+  unsigned char ar[256];
   //
 } arrayn;
 
 typedef struct pub
 {
-   char a[K];
-   char b[K];
+  unsigned char a[K];
+  unsigned char b[K];
 } set;
 
 
 #define I8T char
 #define U8C(v) (v##U)
 
-#define U8V(v) (( char)(v)&U8C(0xFF))
+#define U8V(v) ((unsigned char)(v)&U8C(0xFF))
 #define ROTL8(v, n) \
   (U8V((v) << (n)) | ((v) >> (8 - (n))))
 
 #define R(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
 /*
- int rotate_left( int x, int n)
+unsigned int rotate_left(unsigned int x, int n)
 {
   assert(0 < n && n < 32);
   return (x << n) | (x >> (32 - n));
@@ -110,50 +110,49 @@ typedef struct pub
 /*
 typedef union
 {
-   long long int u[8];
-   char d[64];
+  unsigned long long int u[8];
+  unsigned char d[64];
 } arrayul;
 
 typedef struct a4
 {
-   char ar[4];
+  unsigned char ar[4];
 } array;
 
 typedef struct a8
 {
-   char ar[8];
+  unsigned char ar[8];
 } array8;
 
 typedef struct
 {
-   int h[16];
+  unsigned int h[16];
 } array16;
 
 typedef struct aN
 {
-   char ar[N];
+  unsigned char ar[N];
 } arrayn;
 
 typedef struct pub
 {
-   char a[N];
-   char b[N];
+  unsigned char a[N];
+  unsigned char b[N];
 } set;
 */
 
 typedef struct {
-   short x[N][N];
+  unsigned short x[N][N];
   OP f;
   int row; //行
   int col; //列
 } MTX;
 
-/*
+
 typedef struct {
-   short x[N][K];
-   char z[N][K*E];
-   char w[K*E][K*E];
+  unsigned short x[N][K];
+  unsigned char z[N][K*E];
+  unsigned char w[K*E][K*E];
   int i;
   int rank;
 } MAT;
-*/
