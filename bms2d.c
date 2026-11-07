@@ -330,6 +330,38 @@ static void print_poly(const poly *f)
     }
 }
 
+static void print_error_vector(const err *errors, int ne)
+{
+    int e[NN][NN] = {{0}};
+
+    for (int k = 0; k < ne; k++)
+        e[errors[k].a][errors[k].b] = errors[k].v;
+
+    printf("\n=== Error vector e[a][b] ===\n");
+    printf("    ");
+    for (int b = 0; b < NN; b++)
+        printf("%3d", b);
+    printf("\n");
+
+    for (int a = 0; a < NN; a++) {
+        printf("%3d:", a);
+        for (int b = 0; b < NN; b++)
+            printf("%3X", e[a][b]);
+        printf("\n");
+    }
+}
+
+static void print_bms_basis(const poly *F, int nf)
+{
+    printf("\n=== BMS basis polynomials ===\n");
+
+    for (int k = 0; k < nf; k++) {
+        printf("F[%d] = ", k);
+        print_poly(&F[k]);
+        printf("\n");
+    }
+}
+
 int main(int argc, char **argv)
 {
     gf_init();
@@ -343,9 +375,28 @@ int main(int argc, char **argv)
         int w = argc > argi + 1 ? atoi(argv[argi + 1]) : 4;
         err e[MAXD], f[MAXD];
         random_errors(e, w); make_syndromes(e, w);
+random_errors(e, w);
+make_syndromes(e, w);
+
+print_error_vector(e, w);
+
+printf("既知のシンドローム i+j<%d(%d 個)。誤り %d 個を入れた:\n",
+       D, D * (D + 1) / 2, w);
+
+for (int k = 0; k < w; k++)
+    printf("  位置 (%2d,%2d)  値 %2d\n",
+           e[k].a, e[k].b, e[k].v);
+
+int n = decode(f);
+
+printf("\nBMS が求めた極小多項式(%d 本、補助多項式を %d 個ためた):\n",
+       nF, nG);
+
         printf("既知のシンドローム i+j<%d(%d 個)。誤り %d 個を入れた:\n", D, D * (D + 1) / 2, w);
         for (int k = 0; k < w; k++) printf("  位置 (%2d,%2d)  値 %2d\n", e[k].a, e[k].b, e[k].v);
-        int n = decode(f);
+        //int n = decode(f);
+        print_bms_basis(Fs, nF);
+        
         printf("\nBMS が求めた極小多項式(%d 本、補助多項式を %d 個ためた):\n", nF, nG);
         for (int k = 0; k < nF; k++) { printf("  "); print_poly(&Fs[k]); printf("\n"); }
         printf("Delta(誤りの個数 %d):", dn);
@@ -387,6 +438,7 @@ int main(int argc, char **argv)
             err e[MAXD], f[MAXD];
             random_errors(e, w); make_syndromes(e, w);
             int n = decode(f);
+            print_bms_basis(Fs, nF);
             if (n < 0) fail++; else if (same_set(e, w, f, n)) succ++; else mis++;
         }
         printf("    %3d     | %6.1f%%  | %6.1f%%  | %6.1f%%\n", w, 100.0 * succ / trials, 100.0 * fail / trials, 100.0 * mis / trials);
