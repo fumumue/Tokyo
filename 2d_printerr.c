@@ -43,7 +43,7 @@ static void make_generator(int g[NSYM + 1])
         int a = pow17(3, root);
         for (int i = degree; i >= 0; --i) {
             poly[i + 1] = mod(poly[i + 1] + poly[i]);
-            poly[i] = mod(poly[i] - a * poly[i]);
+            poly[i] = mod(-a * poly[i]);
         }
         ++degree;
     }
@@ -61,6 +61,7 @@ static void encode_line(const int in[K], int out[N])
         for (int j = 0; j <= NSYM; ++j)
             out[d - NSYM + j] = mod(out[d - NSYM + j] - factor * g[j]);
     }
+    for (int j = 0; j < NSYM; ++j) out[j] = mod(-out[j]);   /* c = x^NSYM*m - (x^NSYM*m mod g) */
     for (int i = 0; i < K; ++i) out[i + NSYM] = mod(in[i]);
 }
 
